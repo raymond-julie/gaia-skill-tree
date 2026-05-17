@@ -1,6 +1,6 @@
-# /project-management  [2★ · Named]
+# Extra Skill: /project-management  [2★ · Named]
 **ID:** project-management  
-**Type:** Basic Skill  
+**Type:** Extra Skill  
 **Level:** 2★  
 **Tier:** Named  
 **Skill Call:** `/project-management`
@@ -11,10 +11,14 @@
 Manages issues, tasks, projects, and team workflows through structured project management platforms, handling state transitions and priority levels.
 
 ## Prerequisites
+- [API Call](../basic/api-call.md)
 - [Issue Triage](../basic/issue-triage.md)
 
 ## Unlocks
 _None._
+
+## Fusion Condition
+_None specified._
 
 ## Evidence
 | Class | Source | Evaluator | Date |

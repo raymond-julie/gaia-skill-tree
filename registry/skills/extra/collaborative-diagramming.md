@@ -11,6 +11,7 @@
 Generates and manages digital diagrams, flowcharts, and architecture maps in web-native or collaborative formats, optimized for hand-drawn aesthetics or structured vector output.
 
 ## Prerequisites
+- [API Call](../basic/api-call.md)
 - [Data Visualize](../basic/data-visualize.md)
 
 ## Unlocks

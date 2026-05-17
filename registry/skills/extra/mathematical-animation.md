@@ -13,6 +13,7 @@
 Produces programmatic mathematical and algorithmic animations with high pedagogical and visual quality, utilizing LaTeX for notation and geometric coordinate systems for spatial layout.
 
 ## Prerequisites
+- [Code Execution](../basic/code-execution.md)
 - [Data Visualize](../basic/data-visualize.md)
 
 ## Unlocks

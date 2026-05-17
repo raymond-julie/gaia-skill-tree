@@ -1,6 +1,6 @@
-# /knowledge-management  [2★ · Named]
+# Extra Skill: /knowledge-management  [2★ · Named]
 **ID:** knowledge-management  
-**Type:** Basic Skill  
+**Type:** Extra Skill  
 **Level:** 2★  
 **Tier:** Named  
 **Skill Call:** `/knowledge-management`
@@ -12,9 +12,13 @@ Organizes, relates, and retrieves information across structured pages, databases
 
 ## Prerequisites
 - [API Call](../basic/api-call.md)
+- [Retrieve](../basic/retrieve.md)
 
 ## Unlocks
 - [Knowledge Harvest](../extra/knowledge-harvest.md)
+
+## Fusion Condition
+_None specified._
 
 ## Evidence
 | Class | Source | Evaluator | Date |

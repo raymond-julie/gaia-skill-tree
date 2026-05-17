@@ -13,6 +13,7 @@
 Generates and manipulates images, video, and audio through complex node-based or scripted generative workflows, managing model dependencies and parameter injection.
 
 ## Prerequisites
+- [API Call](../basic/api-call.md)
 - [Data Visualize](../basic/data-visualize.md)
 
 ## Unlocks

@@ -1,6 +1,6 @@
-# /workspace-automation  [2★ · Named]
+# Extra Skill: /workspace-automation  [2★ · Named]
 **ID:** workspace-automation  
-**Type:** Basic Skill  
+**Type:** Extra Skill  
 **Level:** 2★  
 **Tier:** Named  
 **Skill Call:** `/workspace-automation`
@@ -12,9 +12,13 @@ Orchestrates productivity tasks across email, calendar, drive, and documents thr
 
 ## Prerequisites
 - [API Call](../basic/api-call.md)
+- [Document Editing](../basic/document-editing.md)
 
 ## Unlocks
 _None._
+
+## Fusion Condition
+_None specified._
 
 ## Evidence
 | Class | Source | Evaluator | Date |

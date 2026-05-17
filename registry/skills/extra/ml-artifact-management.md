@@ -1,6 +1,6 @@
-# /ml-artifact-management  [2★ · Named]
+# Extra Skill: /ml-artifact-management  [2★ · Named]
 **ID:** ml-artifact-management  
-**Type:** Basic Skill  
+**Type:** Extra Skill  
 **Level:** 2★  
 **Tier:** Named  
 **Skill Call:** `/ml-artifact-management`
@@ -12,9 +12,13 @@ Manages machine learning models, datasets, and experiment logs through centraliz
 
 ## Prerequisites
 - [API Call](../basic/api-call.md)
+- [Classify](../basic/classify.md)
 
 ## Unlocks
 _None._
+
+## Fusion Condition
+_None specified._
 
 ## Evidence
 | Class | Source | Evaluator | Date |

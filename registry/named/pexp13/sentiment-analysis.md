@@ -1,16 +1,18 @@
 ---
-id: sentiment-analysis
+id: pexp13/sentiment-analysis
 name: Sentiment Analysis
 contributor: pexp13
-origin: UGC text analysis (product reviews, social comments, support tickets)
+origin: true
 genericSkillRef: sentiment-analysis
-status: active
-level: "3★ (B) Evolved"
+status: awakened
+level: "3★"
 description: >
   Classifies the affective polarity (positive / negative / neutral, or fine-grained)
   of user-generated text. Covers the full pipeline from raw noisy input through
   preprocessing, inference, and output normalisation. Stack is intentionally
   tool-agnostic — three implementation tracks are documented below.
+createdAt: "2026-05-17"
+updatedAt: "2026-05-17"
 ---
 
 ## Implementation

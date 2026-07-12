@@ -4,6 +4,116 @@ Maintained by the Orchestrator agent. Newest entries first within each section.
 
 ---
 
+## State Snapshot (2026-07-13, session — graph UX polish + PR #1125 merged to staging)
+
+### TLDR
+- Superadmin mode. Two graph nitpicks fixed and merged. PR **#1125** is now in `dev/yggdrasil-ii-staging`.
+- **Filters** no longer drifts downward on open — was a `align-items: center` vs content-height mismatch; fixed to `flex-start`.
+- **Search bar** wider (`130→180px` default, `175→240px` focus, adaptive on mobile), gains `<datalist>` autocomplete from skill names/IDs/titles, and token-based fuzzy matching.
+- Epic #1002 comment updated with full PR summary + token spend.
+- **Next session:** Sprint F scope + redesigned Ascension Overdrive.
+
+### What changed this session
+| Layer | State |
+|---|---|
+| `.graph-legend` CSS | ✅ `align-items: flex-start` — pure horizontal open, no downward drift |
+| `.graph-legend-content` CSS | ✅ `overflow-y: auto; max-height: inherit` — scrolls if taller than canvas budget |
+| `.graph-search` CSS | ✅ default `180px`, focus `240px`; mobile fullscreen `min(200px, calc(100vw - 80px - 2rem))` |
+| `skill-graph.js` autocomplete | ✅ `<datalist>` created + linked; populated from skills/namedMap/titleMap on load via `_refreshSearchDatalist()` |
+| `skill-graph.js` fuzzy search | ✅ single `includes()` → all-tokens-must-match against concatenated field corpus |
+| PR #1125 | ✅ Merged to `dev/yggdrasil-ii-staging` at `d91654c570f` |
+| Issue #1002 | ✅ Comment posted with full PR #1125 summary + token spend |
+
+### Branches at end of session
+| Branch | Head SHA | Status |
+|---|---|---|
+| `design/homepage-gaia-tree-hero` | `52922c7ec` | ✅ Merged into `dev/yggdrasil-ii-staging` |
+| `dev/yggdrasil-ii-staging` | `d91654c570f` (merge commit) | Staging integration branch — all World Tree hero work landed |
+
+### Issues + PRs touched
+| # | Title | Action |
+|---|---|---|
+| PR #1125 | design(home): grow the Gaia Skill Tree hero | ✅ Merged to `dev/yggdrasil-ii-staging` |
+| Issue #1002 | EPIC · Yggdrasil II | ✅ Comment posted with PR #1125 summary |
+
+### Routing — where things live now
+- Filters + search bar CSS: `docs/css/styles.css` — `.graph-search`, `.graph-legend`, `.graph-legend-content`, mobile `@media(max-width:700px)` overrides
+- Autocomplete + fuzzy: `docs/js/skill-graph.js` — `_refreshSearchDatalist()` (hoisted fn declaration), `_tokenMatch()` inside render loop, `state.searchDatalist` set during chrome init
+- All World Tree hero work: `dev/yggdrasil-ii-staging` (staging gate before `main`)
+
+### Lessons / hazards preserved
+- **`align-items: center` on a flex-row drawer causes vertical drift** when panel content height differs from the toggle handle height. Both the toggle and content get centered against each other, so the taller one extends beyond the shorter's boundaries. Always use `flex-start` for right-edge drawers anchored at `top: 50%`.
+- **`<datalist>` is the lowest-friction autocomplete for a canvas-embedded input** — no library, works natively on iOS/Android, no z-index battles. The `list=` attribute does the wiring; just keep the datalist in `<body>` (not inside the canvas wrapper) so the browser can render the dropdown above all other elements.
+
+### Open questions for next orchestrator
+- **Sprint F scope** — what's the full sprint? Confirm before dispatching workers.
+- **Redesigned Ascension Overdrive** — `design/v6.1.1-ascension-overdrive-v2` is parked. What's the new design direction? Need a brief before implementation.
+- **`dev/yggdrasil-ii-staging` → `main` PR** — when does the Yggdrasil II integration branch merge? Is there any remaining sub-issue before it can go to main?
+
+### Token cost (this session)
+| Field | Value |
+|---|---|
+| Model | Claude Sonnet (`claude-sonnet-latest`), high effort |
+| Date | 2026-07-13 |
+| Cost | ~**2.50€** |
+
+---
+
+## State Snapshot (2026-07-13, session — mobile World Tree hero polish, superadmin pass, DONE not merged)
+
+### TLDR
+- **Design department is DONE for PR #1125's mobile hero.** Superadmin mode (orchestrator coding directly, no subagents) — a run of surgical mobile-only polish passes, all shipped to `design/homepage-gaia-tree-hero`. **Do NOT merge — Marco has more to do in a new session.**
+- Closed the `/impeccable critique mobile` backlog (29/40, P1×2 shipped earlier, P2×2 this session) plus three operator-driven fixes: report-notif to top on all breakpoints, localized legibility bed, and the sticky-webp-in-explorer bug.
+- Every fix stayed inside `design/` branch scope (`docs/` + `*.md` only). No hex (rgba/tokens), CRLF preserved on every write. `scripts/add_post.py`-managed DOM left untouched (notif promotion done via CSS positioning only).
+
+### What changed this session
+| Layer | State |
+|---|---|
+| Critique P2 — sub-copy contrast | ✅ `.hero-sub` `var(--muted)` (#64748b ~4.2:1, failed AA) → `var(--rank-0)` (#94a3b8, 7.85:1). Token, not hex. |
+| Critique P2 — kicker de-overload | ✅ dropped decorative leading `◇` glyph; eyebrow now one clean mono label. flex/gap left inert (single text child). |
+| Report notif → top (all breakpoints) | ✅ `.hero-audit-btn` was `bottom:1.4rem` on desktop/tablet (stray footnote). Now `top:4.4rem; left:clamp(1rem,3vw,3rem)` base + tablet override flipped. Peer to top-right Explore-in-3D everywhere. |
+| Localized legibility bed (mobile) | ✅ feathered `radial-gradient` dark pool behind `.hero-tree-copy` via `::before` z-index:-1. Crown stays vivid; copy gets calm substrate exactly where gold bloom punched through. Operator-chosen over global-filter / recolor-only. |
+| Sticky webp in mobile explorer | ✅ root cause: mobile base `.hero-tree-raster{opacity:.68+mask}` sits later in file than desktop explorer dim `opacity:.085` at equal specificity → won inside @media; mobile explorer override only set geometry. Fixed with explicit `opacity:0; mask:none` for entering/explorer/fullscreen. `exiting` EXCLUDED so plate fades back on close, not pops. |
+| Critique snapshot persisted | ✅ `.impeccable/critique/2026-07-12T19-15-00Z__docs-index-html-mobile-hero.md` committed as design record. |
+
+### Branches at end of session
+| Branch | Head SHA | Status |
+|---|---|---|
+| `design/homepage-gaia-tree-hero` | `480ac9772` | 3 new commits this session on top of `6f146cd28`. PR #1125 into `dev/yggdrasil-ii-staging`. **NOT merged — hold for Marco's next session.** |
+
+### Commits this session (newest first)
+- `480ac9772` design(hero): hide webp raster in mobile explorer mode, matching desktop
+- `bd486713b` design(hero): promote report notif to top on all breakpoints + localized legibility bed
+- `6f146cd28` design(hero): implement critique P2s — AA-passing sub-copy, de-overload kicker
+- (prior session tail: `0b520a94c` blurry-backdrop sizes fix, `a00ba4b62` DESIGN.md reconcile, `81c9c89ef` quiet-noise+notif-promote, `e826f18d7` full-bleed backdrop)
+
+### Routing — where things live now
+- Mobile hero block: `docs/css/world-tree-hero.css` `@media (max-width: 700px)` (~L977). Legibility bed `::before` on `.hero-tree-copy` inside it.
+- Explorer raster-kill: same file, mobile explorer override block (~L1234), `opacity:0` rule split out from geometry rule.
+- `.hero-audit-btn` base rule (~L598) now top-left; tablet override (~L971) top-left; mobile (~L1064) unchanged top-left.
+- Report notif DOM: still owned by `scripts/add_post.py` between `<!-- gaia-hero-post-start/end -->` — design branch positions via CSS only, never edits the DOM.
+
+### Lessons / hazards preserved
+- **Source-order beats intent inside @media at equal specificity.** The mobile base raster rule (later in file) silently overrode the desktop explorer dim — classic "same specificity, later wins" trap. When a mobile @media block redeclares a property the desktop state-machine also sets, the mobile explorer/entering/exiting overrides must ALSO redeclare it or the base value leaks into the state. Check every state-machine property, not just geometry.
+- **State-machine carve-outs matter:** `exiting` needs the plate VISIBLE (fade-back), `entering/explorer/fullscreen` need it HIDDEN. Don't bundle all four selectors when one wants opposite behavior.
+- **Legibility on image-led heroes = localized bed, not global dim.** Operator explicitly rejected flattening the crown. Feathered radial pool behind copy only preserves atmosphere AND fixes gold-on-gold + slate-on-bloom clashes at once.
+- `/browse` skill unavailable this session (no `~/.claude/skills/gstack` dir) → could not self-screenshot; all visual verification deferred to operator. Flag if screenshotting is needed next session.
+
+### Open questions for next orchestrator
+- PR #1125 mobile hero is visually signed off by Marco ("perfect", "Nice") but **NOT browser-verified by an agent** (no screenshot capability this session). If gstack/browse returns, a render check of: bed opacity vs crown, top-left notif clearing the Gaia logo at 320px, and the explorer open→close plate fade would close the loop.
+- Marco has an undisclosed follow-up task queued for a **new session** — do not assume it's design. Ask "what are we driving today?" fresh.
+- Merge of #1125 still pending Marco's go — the branch is ready but explicitly held.
+
+### Token cost (this session)
+- Operator-reported (superadmin, overwhelmingly orchestrator-only — minimal/no subagent spend this session):
+  - Cost (CU | €): **77.52 | 41.86€**
+  - Cache (W/R): 3,434,746 | 67,357,697
+  - Total requests: 715
+  - Tokens (Out/In): 740,121 | 311,642
+- Model: Opus 4.8 (superadmin direct-code mode per founder/CLAUDE.md).
+
+---
+
 ## State Snapshot (2026-07-12, session — world-tree semantic topology ratified, sub-agents dispatched)
 
 ### TLDR

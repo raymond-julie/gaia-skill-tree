@@ -69,6 +69,46 @@ A starless ref's *effective rank* (the top star among its named variants) may be
 
 ---
 
+## World Tree Color and Glyph Re-axis
+
+The World Tree (hero 2D + 3D Explorer) re-axes color and glyph away from the four-type identity used elsewhere in the graph canvas, for two reasons: only two types (`basic` / `fusion`) will exist at Yggdrasil II cutover, making type-color redundant; and rank is meta-invariant — stars are stars in both Ygg I and Ygg II.
+
+### Color = effective rank
+
+Node color encodes **effective rank** (the highest star among a node's named-skill children, joined at runtime from `docs/graph/named/index.json`). Use the existing rank tokens — no hex fallbacks.
+
+| Rank | Stars | Token |
+|---|---|---|
+| Unranked / Awakened | 0–1★ | `--rank-0` (grey, starless/redacted) |
+| Named | 2★ | `--rank-2` |
+| Evolved | 3★ | `--rank-3` |
+| Hardened | 4★ | `--rank-4` |
+| Transcendent | 5★ | `--rank-5` |
+| Apex | 6★ | `--rank-6` |
+
+Tokens `--rank-N`, `--rank-N-bg`, `--rank-N-border`, and `--rank-N-edge` follow the same pattern as in `docs/css/tokens.css` (sourced from `src/gaia_cli/formatting.py::RANK_COLORS`). Colored ramp starts at 2★ Named — 0–1★ nodes render grey and land at outer coreness automatically. Unique constellation uses a distinct dark palette separate from the rank ramp (see `docs/architecture/world-tree-model.md` §Y-Fork).
+
+In the **hero (2D editorial)** pose, rank is positional only — all nodes use the single-gold editorial palette (`--apex-gold` / `--apex-gold-rgb` alpha values); color-by-rank is suppressed so the silhouette stays monochrome. Color-by-rank activates only in the **3D Explorer** view.
+
+### Glyph = structural class
+
+Node glyph encodes **structural class** (independent of type vocabulary, stable across the Ygg I → II migration):
+
+| Structural class | Glyph | Type source |
+|---|---|---|
+| Basic primitive | ○ | `type === 'basic'` (not Unique) |
+| Fusion / Extra | ◇ | `type === 'extra'` (Ygg I) or `type === 'fusion'` (Ygg II) |
+| Unique | ◉ | Ygg I: `type === 'unique'` · Ygg II: `type === 'basic' && effRank ≥ 4★ && !suiteComponents` |
+| Suite / Ultimate | ◆ | Ygg I: `type === 'ultimate'` · II: `suiteComponents` present |
+
+These glyphs match `META.md §1.2`. All meta-aware detection lives in `resolveSemantics` in `docs/js/world-tree-layout.js`; the render layer consumes the output contract's `glyph` field only.
+
+### Node radius
+
+Node radius also keys to rank (bigger = more proven), extending the existing `NODE_RADII` convention in `docs/js/skill-graph.js`. The exact tuning is an Agent 2 implementation detail; the design constraint is that radius must increase monotonically with effective rank.
+
+---
+
 ## Evidence Grades
 
 Evidence items are evaluated and assigned quality grades. The grade palette now exposes semantic token labels in `docs/css/tokens.css` (`--evidence-platinum`, `--evidence-gold`, `--evidence-silver`, `--evidence-bronze`) while preserving the legacy `--grade-S` / `--grade-A` / `--grade-B` / `--grade-C` aliases for existing UI hooks.
@@ -176,13 +216,17 @@ Syntax highlighting in `<pre>` blocks:
 
 **Nav** — sits on a 1px hairline divider in `var(--border)` over `var(--bg)`. No glassmorphism on the main nav (the previous frosted-glass treatment is retired here). Diamond Seal mark + wordmark on the left, destination links on the right.
 
-**Hero titles** — solid `var(--text)` in EB Garamond at weight 600 (`var(--font-display)`). No gradient text. Emphasis words (e.g., "rare", "earned") may carry a single hairline gold underline using `border-bottom: 1px solid var(--apex-gold)` or an equivalent inline `<span>` underline accent. The previous three-stop tier-gradient sweep on titles is retired.
+**Hero titles** — solid `var(--text)` in EB Garamond at weight 600 (`var(--font-display)`). No gradient text. Emphasis words (e.g., "rare", "earned") may carry a single hairline gold underline using `border-bottom: 1px solid var(--apex-gold)` or an equivalent inline `<span>` underline accent. The homepage's exact `Gaia Skill Tree` title may set `Skill Tree` in solid Apex Gold as part of the World Tree brand lock-up. The previous three-stop tier-gradient sweep on titles is retired.
+
+**World Tree brand-mark exception** — the homepage World Tree is Gaia's living brand mark, generated from the canonical DAG rather than added as decoration. In its front-facing hero pose, every real node and edge may use one tonal gold family built from low-alpha `--apex-gold` / `--apex-gold-rgb` values. Root, trunk, ordinary branches, and buds stay antique or muted; full-strength `--apex-gold`, larger diamond geometry, and rings remain reserved for Ultimate/Apex emphasis. The fine sakura branch attached to the `Gaia Skill Tree` title is a decorative typesetting cue only, visually lighter than the graph and never counted as a skill or prerequisite edge. This exception applies only to the complete World Tree silhouette and does not license gold paragraph copy, generic gold UI, or removal of non-colour rank signals. When the same objects enter **Tree Explorer**, they recover the current canonical tier/rank colours through the visual-role adapter while Ultimate and Apex identities remain explicit by label and geometry.
+
+**Yggdrasil image and graph contract** — the approved gold Yggdrasil artwork may sit behind the live canvas as a responsive raster atmosphere, but the canonical graph remains the semantic tree. In the hero, the two layers align into one silhouette: the raster supplies fine bark and root texture while every live node and all canonical edges remain projected above it as brighter ray-tracing marks. In Tree Explorer, the raster recedes to a faint, front-facing reference plane while the live graph alone gains depth, orbit, tier colour, hover, and collection behavior. The layout derives one deterministic structural parent edge per non-root node to describe the readable trunk and bough hierarchy; every remaining canonical edge is retained as a quieter graft. Intake growth may change counts and depth without changing renderer code or introducing decorative graph edges.
 
 **Hero tier gradient (retained, scoped)** — the three-stop sweep
 ```
 linear-gradient(135deg, #38bdf8 0%, #c084fc 50%, #f59e0b 100%)
 ```
-is retained ONLY as the background fill for the floating hero CTA pills (`◆ Open full graph`, `⇄ Field view`). It is no longer used on titles or body copy.
+is retained only on legacy graph surfaces that already use it. The homepage World Tree, its `Explore in 3D` control, titles, and body copy do not use this sweep.
 
 **Buttons**
 - Primary: solid `var(--apex-gold)` background on a midnight (`var(--bg)`) border, white-on-midnight text (`color: var(--text)`), `box-shadow: 0 0 24px rgba(var(--apex-gold-rgb), .3)`. Used only for Apex affordances.
@@ -323,7 +367,7 @@ These role tokens layer on top of the locked tier and rank colour tables. They d
 |---|---|---|
 | `--honor-red` | `#ef4444` | Contributor handle colour. Used wherever a real contributor name appears (graph labels, plaques, named-skills cards, nav `Named` link). Never decorative. |
 | `--honor-red-rgb` | `239, 68, 68` | RGB triplet for composing `rgba(var(--honor-red-rgb), α)` overlays and shadows. |
-| `--apex-gold` | `#fbbf24` | 6★ / Ultimate / Diamond Seal mark accent. Used for Apex affordances only — the seal mark, the apex CTA pill, the Hall of Heroes apex glyph. Never decorative; never as a paragraph-level accent. |
+| `--apex-gold` | `#fbbf24` | 6★ / Ultimate / Diamond Seal mark accent. Used at full strength for Apex affordances only — the seal mark, apex CTA, Hall glyph, and Ultimate/Apex marks inside the World Tree. Lower World Tree structure may use alpha-derived values under the narrow brand-mark exception above. Never decorative; never as a paragraph-level accent. |
 | `--apex-gold-rgb` | `251, 191, 36` | RGB triplet for composing `rgba(var(--apex-gold-rgb), α)` glows, button shadows, ledger-strip highlights. |
 | `--font-display` | `'EB Garamond', Georgia, serif` | Display face. Hero titles, plate headings, section h2 only. |
 | `--font-body` | `'Bricolage Grotesque', Inter, system-ui, sans-serif` | Body face. All paragraph and UI text. |
@@ -340,7 +384,7 @@ Gaia's public surface (`gaiaskilltree.com`) is the **Hunter's Atlas**: a Sacred-
 
 On top of the locked tier and rank colour tokens, two brand-voice tokens do the carry-everything work: **Honor Red (`--honor-red`)** is reserved for contributor handles; **Apex Gold (`--apex-gold`)** is reserved for 6★/Ultimate/Diamond-Seal moments and Apex-only affordances. Tier and rank colour tokens, 6★ Apex shimmer, the graph canvas geometry, the Skill Explorer glow tokens, and the Ultimate/Extra cycling animations are all hard-locked and survive unchanged into this lane.
 
-The 3D canvas (`canvas3d`) is **preserved** as a secondary view — repurposed as an ambient parallax background behind the 2D graph hero, and reachable as the primary view via a `⇄ Field view` toggle. The 2D skill graph is the primary hero. The Diamond Seal mark (`◇G` lock-up) is the brand mark; the apex `◆` glyph remains free for its tier role. Per `CONTEXT.md:137-139`, "HUD" is internal-only nomenclature (used in code class names like `.hud-trigger` and file names like `hud-toggle.js`); user-facing copy uses **Field view** for the toggle and **Registry** for any view of the public skill graph.
+The World Tree uses one `canvas3d` and one stable set of graph objects. Its default hero pose is front-facing, visually 2D, and gold. **Explore in 3D** expands that same canvas to fullscreen while the objects gain depth, canonical tier/rank colour, orbit controls, hover states, and collection tools; exit reverses the morph to the exact hero pose. **Field view is deprecated**: `?tree=1` is canonical, while `?field=1` and `?hud=1` may remain compatibility aliases to Tree Explorer. The explorer is tree-only—no semantic/spectral constellation mode or crossfade to a second renderer. The Diamond Seal mark (`◇G` lock-up) remains the brand mark; the apex `◆` glyph remains free for its tier role. "HUD" may survive only as internal legacy nomenclature in class and file names.
 
 ## Anti-references & accessibility (see PRODUCT.md)
 
@@ -359,7 +403,7 @@ Use for background image layers on signature sections only. The primary use case
 - Implementation: `requestAnimationFrame` + `translateY` — never `background-attachment: fixed` (breaks on iOS Safari)
 - Background element: absolutely positioned, `inset: -30% 0` to allow vertical travel without white-edge gaps, `will-change: transform`
 - Overlay: `rgba(3,7,18, 0.82)` minimum for text readability; `0.88` on mobile
-- Disable below 768px: use `window.matchMedia('(min-width: 768px) and (prefers-reduced-motion: no-preference)')` guard
+- Disable below 768px: use `window.matchMedia('(min-width: 768px) and (prefers-reduced-motion: no-preference)')` guard. **Exception:** the World Tree hero's vertical scroll parallax runs at all widths (it is guarded on `prefers-reduced-motion` only, not on width) because on mobile the tree is a full-bleed backdrop, not a sidebar decoration — see the World Tree hero parallax subsection.
 - `prefers-reduced-motion`: skip the scroll listener entirely when reduced motion is preferred
 
 ### Scroll-triggered entrance (one-shot)
@@ -372,9 +416,22 @@ Use for card grids and tile lists where items appear on first scroll into view. 
 - Default state: `opacity: 0` in CSS so items are invisible before animation fires
 - `prefers-reduced-motion`: reset to `opacity: 1; animation: none`
 
+### World Tree hero — sticky vertical scroll parallax (exception)
+
+The homepage World Tree hero is the **one** hero that carries parallax, because the tree is Gaia's living brand mark, not read-copy competing for attention. The raster plate and the live `#canvas3d` are two layers of one silhouette and must travel together as the page scrolls.
+
+**Spec** (`docs/js/hud-toggle.js` + `docs/css/world-tree-hero.css`):
+- **Vertical only, scroll-linked.** Never pointer/hover parallax — a mouse-reactive parallax decoupled the plate from the canvas and was explicitly rejected.
+- Both layers read one shared custom property, `--hero-tree-parallax-y`, composed with the base offset `--hero-tree-shift-y` (default `-4%`) so raster + canvas move as a single object. The raster also carries a static `translate(22%)` in X (its projection origin differs from the canvas at `72% 50%`); there is no X parallax term.
+- Depth factor `-0.08` (tree lags the page at ~8% of scroll travel), clamped to ±64px so it never drifts off-frame. One `requestAnimationFrame` write per scroll frame.
+- Only active while `hero.dataset.treeState === 'hero2d'`; zeroed when the 3D Explorer is open.
+- `prefers-reduced-motion: reduce` skips the scroll listener entirely (no fallback motion needed — the static shifted pose is the reduced state).
+
+This exception is scoped to the World Tree hero silhouette only; it does not license parallax on any other hero or on read-copy sections (see *What does NOT get parallax* below).
+
 ### What does NOT get parallax
 
-- Hero sections (the text IS the content; parallax would compete)
+- Hero **copy** sections where the text is the content (parallax would compete). The World Tree hero is exempt because its parallax layer is the brand-mark tree, not text — see the subsection above.
 - Navigation and footer
 - Form elements or interactive controls
 - Any element the user is actively scrolling to read
@@ -397,7 +454,18 @@ All new CSS is written from the 320px baseline upward. `min-width` breakpoints o
 ### Mobile-specific rules
 
 - Cards and panels with `border-radius` become full-bleed on `< 480px` (no radius, negative margin to escape padding, no left/right border)
-- Parallax disabled on mobile (static background, overlay lifted)
+- Parallax disabled on mobile (static background, overlay lifted) — **except** the World Tree hero, whose vertical scroll parallax is width-independent (see the parallax section).
 - Font sizes use `clamp()` with a floor that works at 320px
 - Touch targets minimum 44×44px
 - No `position: fixed` for decorative elements on mobile (performance)
+
+### World Tree hero — mobile full-bleed backdrop pattern
+
+On mobile (`max-width: 700px`) the World Tree hero is **not** the desktop split-grid scaled down; the tree becomes a full-bleed atmospheric backdrop with the copy overlaid, per the brand register's image-led move ("let the photograph be the design"). Rebuilt after the v6.4.x mobile review, where the tree had been boxed into a cramped ~44svh top band with the copy pushed beneath it.
+
+**Pattern** (`docs/css/world-tree-hero.css` `@media (max-width: 700px)`):
+- The shell is `display: flex; flex-direction: column; justify-content: flex-end` so the copy anchors to the lower third and rises out of the tree's base. No large `padding-top` offset on `.hero-content`.
+- Both tree layers (`.hero-tree-raster` and `#canvas3d`) are `inset: 0`, full height, `object-position` / `transform-origin` at `50% 30%` so the crown breathes in the upper third.
+- **Noise control (depth-of-field, not a flat dim):** a radial vignette `mask` fades the scattered edge starfield into darkness so the periphery stops competing; a slight `blur(.4px)` + `saturate(.78)` on the raster calms the dense midfield tangle so it reads as atmosphere, not a busy diagram. This was the fix for the critique's weak axis (aesthetic/minimalist 2/4).
+- A top→bottom `::after` scrim keeps the crown airy, darkens the lower half into a legibility bed for the headline, and resolves to `var(--bg)` at ~97% so the roots dissolve into the page.
+- **Top utility strip:** `Explore in 3D` sits top-right; the automated latest-report notification (`.hero-audit-btn`, DOM-managed by `scripts/add_post.py` between the `gaia-hero-post` markers) is promoted to top-left as its peer. The desktop floating-bottom-chip placement is overridden in the mobile block only; `add_post.py` is never edited from a `design/` branch.

@@ -40,6 +40,8 @@
   <link rel="stylesheet" href="css/plaque.css?v=6.3.17">
   <!-- Universal AlphaRail (page-wide section + explorer index). -->
   <link rel="stylesheet" href="css/alpha-rail.css?v=6.3.17">
+  <!-- Homepage-only World Tree composition and 2D ↔ 3D explorer shell. -->
+  <link rel="stylesheet" href="css/world-tree-hero.css?v=6.3.17">
   <!-- Stage 1 — icon sprite helper, loaded BEFORE other UI scripts. -->
   <script src="js/icons.js?v=6.3.17"></script>
   <!-- Stage 2 — shared rank-badge primitive, loaded after icons. -->
@@ -302,37 +304,90 @@
   <script src="js/site-nav.js?v=6.3.17"></script>
 
   <!-- ─── HERO ─── -->
-  <section id="hero">
-    <canvas id="canvas3d" aria-label="4D semantic skill graph of 200 skills across tier and cluster dimensions"></canvas>
-    <div class="hero-mobile-graph" aria-hidden="true">
-      <img src="graph/gaia.svg" alt="" width="600" height="600">
+  <section id="hero" class="hero-tree-shell" data-tree-state="hero2d" aria-labelledby="heroTreeTitle">
+    <picture class="hero-tree-raster" aria-hidden="true">
+      <source
+        type="image/webp"
+        srcset="assets/world-tree/yggdrasil-backdrop-480.webp 480w, assets/world-tree/yggdrasil-backdrop-941.webp 941w"
+        sizes="(max-width: 700px) 150vw, 56vw">
+      <img
+        src="assets/world-tree/yggdrasil-backdrop-941.webp"
+        width="941"
+        height="1672"
+        alt=""
+        decoding="async"
+        fetchpriority="high">
+    </picture>
+    <canvas id="canvas3d" aria-label="Gaia Skill Tree, rendered as a golden Yggdrasil from the live skill graph"></canvas>
+    <div class="hero-tree-atmosphere" aria-hidden="true"></div>
+    <div class="hero-pills hero-tree-utilities" aria-label="Registry utilities">
+      <button class="field-trigger hero-tree-explore" type="button" id="hudToggleBtn" aria-pressed="false" aria-label="Explore the Gaia Skill Tree in 3D">
+        <svg class="ico" width="16" height="16" aria-hidden="true"><use href="assets/icons.svg#view-tree"/></svg>
+        <span>Explore in 3D</span>
+      </button>
     </div>
-    <div class="hero-glass-blur"></div>
-    <div class="hero-glass-noise"></div>
     <div class="hero-content">
-      <div class="hero-pills">
-        <button class="field-trigger" type="button" id="hudToggleBtn" aria-pressed="false" aria-label="Toggle field view"><svg class="ico" width="14" height="14" aria-hidden="true"><use href="assets/icons.svg#hud-toggle"/></svg> Field view</button>
-        <a class="field-trigger" href="trust/ledger/" aria-label="Trust Ledger" style="text-decoration:none;">◆ Trust Ledger</a>
+      <div class="hero-tree-copy">
+        <p class="hero-tree-kicker">Evidence-backed agent capabilities</p>
+        <h1 class="hero-title" id="heroTreeTitle">
+          <span>Gaia</span>
+          <span class="hero-title-tree">Skill Tree
+            <svg class="hero-sakura-branch" viewBox="0 0 180 88" aria-hidden="true" focusable="false">
+              <defs>
+                <g id="heroSakuraBloom">
+                  <ellipse cx="0" cy="-4.4" rx="2.5" ry="4.1"/>
+                  <ellipse cx="0" cy="-4.4" rx="2.5" ry="4.1" transform="rotate(72)"/>
+                  <ellipse cx="0" cy="-4.4" rx="2.5" ry="4.1" transform="rotate(144)"/>
+                  <ellipse cx="0" cy="-4.4" rx="2.5" ry="4.1" transform="rotate(216)"/>
+                  <ellipse cx="0" cy="-4.4" rx="2.5" ry="4.1" transform="rotate(288)"/>
+                  <circle cx="0" cy="0" r="1.35"/>
+                </g>
+              </defs>
+              <path class="hero-sakura-stem" pathLength="1" d="M4 73C36 70 56 56 82 47c29-10 58-14 92-37"/>
+              <path class="hero-sakura-stem hero-sakura-stem--twig" pathLength="1" d="M69 51c8-16 18-28 31-38M112 37c14 7 26 13 43 13M137 28c7-10 14-17 25-22"/>
+              <use class="hero-sakura-bloom hero-sakura-bloom--1" href="#heroSakuraBloom" transform="translate(100 13) scale(.88)"/>
+              <use class="hero-sakura-bloom hero-sakura-bloom--2" href="#heroSakuraBloom" transform="translate(154 50) scale(.72)"/>
+              <use class="hero-sakura-bloom hero-sakura-bloom--3" href="#heroSakuraBloom" transform="translate(163 6) scale(.62)"/>
+              <circle class="hero-sakura-bud hero-sakura-bloom--4" cx="126" cy="34" r="2.25"/>
+              <circle class="hero-sakura-bud hero-sakura-bloom--5" cx="173" cy="10" r="1.8"/>
+            </svg>
+          </span>
+        </h1>
+        <p class="hero-sub">See what agents can do, who proved it first, and the evidence behind every claim.</p>
+        <div class="hero-tree-actions" aria-label="Choose a Gaia action">
+          <div class="hero-tree-action hero-tree-action--primary hero-tree-install" aria-label="Install Gaia">
+            <span class="hero-tree-action-glyph" aria-hidden="true">◆</span>
+            <span class="hero-tree-install-copy">
+              <strong>Install the Gaia CLI</strong>
+              <span class="hero-tree-install-platforms" role="group" aria-label="Choose an install command">
+                <button class="hero-tree-install-platform is-active" type="button" data-hero-install-platform="curl" aria-pressed="true" onclick="var command='curl -fsSL https://gaiaskilltree.com/install.sh | sh';var copy=document.querySelector('[data-hero-install-copy]');copy.dataset.heroInstallCopy=command;copy.setAttribute('aria-label','Copy the macOS and Linux install command');document.querySelector('[data-hero-install-output]').textContent=command;document.querySelectorAll('[data-hero-install-platform]').forEach(function(button){var active=button===this;button.classList.toggle('is-active',active);button.setAttribute('aria-pressed',active?'true':'false');},this)">curl</button>
+                <button class="hero-tree-install-platform" type="button" data-hero-install-platform="windows" aria-pressed="false" onclick="var command='iex (irm https://gaiaskilltree.com/install.ps1)';var copy=document.querySelector('[data-hero-install-copy]');copy.dataset.heroInstallCopy=command;copy.setAttribute('aria-label','Copy the Windows install command');document.querySelector('[data-hero-install-output]').textContent=command;document.querySelectorAll('[data-hero-install-platform]').forEach(function(button){var active=button===this;button.classList.toggle('is-active',active);button.setAttribute('aria-pressed',active?'true':'false');},this)">iex (Windows)</button>
+              </span>
+              <span class="hero-tree-install-command">
+                <code data-hero-install-output>curl -fsSL https://gaiaskilltree.com/install.sh | sh</code>
+                <button class="hero-tree-install-copy-button" type="button" data-hero-install-copy="curl -fsSL https://gaiaskilltree.com/install.sh | sh" aria-label="Copy the macOS and Linux install command" title="Copy install command">
+                  <svg class="ico" width="15" height="15" aria-hidden="true"><use href="assets/icons.svg#copy"/></svg>
+                </button>
+              </span>
+            </span>
+          </div>
+          <a href="#paths" class="hero-tree-action">
+            <span class="hero-tree-action-glyph" aria-hidden="true">↑</span>
+            <span>
+              <strong>Submit a skill</strong>
+              <small>Send public repository evidence for review</small>
+            </span>
+          </a>
+          <a href="badges/" class="hero-tree-action">
+            <span class="hero-tree-action-glyph" aria-hidden="true">◇</span>
+            <span>
+              <strong>Get a README badge</strong>
+              <small>Carry your Named Skill and earned stars</small>
+            </span>
+          </a>
+        </div>
       </div>
-      <h1 class="hero-title">
-        Skills are catalogued.<br>
-        Names are <em>earned</em>.<br>
-        Apex is <span>rare</span>.
-      </h1>
-      <p class="hero-sub">An evidence-backed Registry of agent capabilities, catalogued with public provenance. Bring your repo, claim your name.</p>
-      <div class="two-doors">
-        <a href="#paths" class="door door-a door--primary">
-          <span class="door-icon">◆</span>
-          <span class="door-label">Push your repo</span>
-          <span class="door-caption">4 steps to register</span>
-        </a>
-        <a href="#ultimates" class="door door-b">
-          <span class="door-icon">◈</span>
-          <span class="door-label">Claim an Ultimate</span>
-          <span class="door-caption" id="doorBCaption">Browse all</span>
-        </a>
-      </div>
-      <div class="ledger-strip">
+      <div class="ledger-strip" aria-label="Live registry totals">
         <span class="ls-stat">
           <span class="ls-num" id="ledgerSkills">—</span>
           <span class="ls-label">skills</span>
@@ -348,7 +403,10 @@
           <span class="ls-label">ultimates</span>
         </span>
         <span class="ls-sep">/</span>
-        <span class="ls-updated" id="ledgerDate"></span>
+        <span class="ls-updated">
+          <span class="ls-label">updated</span>
+          <span id="ledgerDate"></span>
+        </span>
       </div>
     </div>
     <!-- gaia-hero-post-start -->
@@ -549,117 +607,91 @@
 
   <!-- ─── PATHS ─── -->
   <section id="paths" class="reveal" data-section="paths">
+    <div class="rite-entry" id="install-cli" aria-labelledby="riteInstallTitle">
+      <div class="rite-entry-bg" aria-hidden="true">
+        <svg class="rite-entry-logo" viewBox="0 0 64 64" aria-hidden="true"><use href="assets/icons.svg#seal-diamond"/></svg>
+        <img class="rite-entry-tree" src="assets/world-tree/yggdrasil-backdrop-941.webp" alt="">
+      </div>
+      <div class="rite-entry-copy">
+        <span class="path-plate-num">Recommended</span>
+        <h2 id="riteInstallTitle">Install the CLI</h2>
+      </div>
+      <div class="rite-entry-terminal">
+        <div class="rite-platform" role="tablist" aria-label="Use these commands for">
+          <button type="button" class="os-tab active" data-os="unix" onclick="switchOsTab(this)" role="tab" aria-selected="true">macOS · Linux</button>
+          <button type="button" class="os-tab" data-os="win" onclick="switchOsTab(this)" role="tab" aria-selected="false">Windows</button>
+          <button type="button" class="os-tab" data-os="pipx" onclick="switchOsTab(this)" role="tab" aria-selected="false">pipx</button>
+        </div>
+        <div class="rite-install-command">
+          <div class="os-panel active" data-os="unix" role="tabpanel"><pre><span class="cmd">curl -fsSL</span> https://gaiaskilltree.com/install.sh | sh</pre></div>
+          <div class="os-panel" data-os="win" role="tabpanel"><pre><span class="cmd">iex (irm</span> https://gaiaskilltree.com/install.ps1)</pre></div>
+          <div class="os-panel" data-os="pipx" role="tabpanel"><pre><span class="cmd">pipx install</span> gaia-cli</pre></div>
+        </div>
+      </div>
+    </div>
+
     <div class="paths-wrap">
 
       <!-- Path A — Initiate's Rite -->
       <div class="path-a">
-        <div class="path-plate-num">Path A — Initiate's Rite</div>
-        <h2>Register Your Repo</h2>
-        <p class="section-sub mt-sm">Four evidence-backed steps from a public repo to a catalogued entry in the canonical Registry.</p>
+        <div class="path-plate-num">Path A — DIY</div>
+        <h2>Submit Your Repo Skills</h2>
+        <p class="section-sub mt-sm">Run three commands yourself.</p>
         <ol class="rite-steps">
           <li class="rite-step">
             <div class="rite-meta">
               <span class="rite-numeral" aria-hidden="true">I.</span>
               <div class="rite-desc">
-                <strong>Install the CLI</strong>
-                <p>Puts <code>gaia</code> on your PATH.</p>
+                <strong>Initialise</strong>
+                <p>Non-interactive defaults; add <code>--force</code> only when replacing existing config.</p>
               </div>
             </div>
             <div class="rite-term">
-              <div class="os-tabs" role="tablist" aria-label="Operating System selection">
-                <button type="button" class="os-tab active" data-os="unix" onclick="switchOsTab(this)" role="tab" aria-selected="true">macOS · Linux</button>
-                <button type="button" class="os-tab" data-os="win" onclick="switchOsTab(this)" role="tab" aria-selected="false">Windows</button>
-                <button type="button" class="os-tab" data-os="pipx" onclick="switchOsTab(this)" role="tab" aria-selected="false">pipx (Python)</button>
-              </div>
-              <div class="os-panel active" data-os="unix" role="tabpanel">
-                <pre><span class="cmd">curl -fsSL</span> https://gaiaskilltree.com/install.sh | sh</pre>
-              </div>
-              <div class="os-panel" data-os="win" role="tabpanel">
-                <pre><span class="cmd">py -m pip install</span> gaia-cli</pre>
-                <pre class="mt-sm"><span class="cmd">$env:PATH</span> += <span class="str">";"</span> + (python -c <span class="str">"import sysconfig; print(sysconfig.get_path('scripts', 'nt_user'))"</span>)</pre>
-                <div class="qs-tip mt-sm"><span class="qs-tip-icon">💡</span><span>Run the second command if <code>gaia</code> isn't found after install — it adds the Python user Scripts directory to your current PowerShell session's PATH.</span></div>
-              </div>
-              <div class="os-panel" data-os="pipx" role="tabpanel">
-                <pre><span class="cmd">pipx install</span> gaia-cli</pre>
-                <div class="qs-tip mt-sm"><span class="qs-tip-icon">💡</span><span>Installs <code>gaia</code> in an isolated virtual environment and automatically handles PATH configurations. Requires Python 3.8+ and <code>pipx</code>.</span></div>
-              </div>
+              <div class="os-panel active" data-os="unix" role="tabpanel"><pre><span class="cmd">gaia init --yes</span></pre></div>
+              <div class="os-panel" data-os="win" role="tabpanel"><pre><span class="cmd">py -m gaia_cli init --yes</span></pre></div>
+              <div class="os-panel" data-os="pipx" role="tabpanel"><pre><span class="cmd">gaia init --yes</span></pre></div>
             </div>
           </li>
           <li class="rite-step">
             <div class="rite-meta">
               <span class="rite-numeral" aria-hidden="true">II.</span>
               <div class="rite-desc">
-                <strong>Initialise profile</strong>
-                <p>Set up your local profile.</p>
-              </div>
-            </div>
-            <div class="rite-term">
-              <div class="os-tabs" role="tablist" aria-label="Operating System selection">
-                <button type="button" class="os-tab active" data-os="unix" onclick="switchOsTab(this)" role="tab" aria-selected="true">macOS · Linux</button>
-                <button type="button" class="os-tab" data-os="win" onclick="switchOsTab(this)" role="tab" aria-selected="false">Windows</button>
-              </div>
-              <div class="os-panel active" data-os="unix" role="tabpanel">
-                <pre><span class="cmd">gaia init</span></pre>
-              </div>
-              <div class="os-panel" data-os="win" role="tabpanel">
-                <pre><span class="cmd">py -m gaia_cli init</span></pre>
-              </div>
-            </div>
-          </li>
-          <li class="rite-step">
-            <div class="rite-meta">
-              <span class="rite-numeral" aria-hidden="true">III.</span>
-              <div class="rite-desc">
-                <strong>Scan workspace</strong>
+                <strong>Scan</strong>
                 <p>Detect demonstrated skills.</p>
               </div>
             </div>
             <div class="rite-term">
-              <div class="os-tabs" role="tablist" aria-label="Operating System selection">
-                <button type="button" class="os-tab active" data-os="unix" onclick="switchOsTab(this)" role="tab" aria-selected="true">macOS · Linux</button>
-                <button type="button" class="os-tab" data-os="win" onclick="switchOsTab(this)" role="tab" aria-selected="false">Windows</button>
-              </div>
-              <div class="os-panel active" data-os="unix" role="tabpanel">
-                <pre><span class="cmd">gaia scan</span></pre>
-              </div>
-              <div class="os-panel" data-os="win" role="tabpanel">
-                <pre><span class="cmd">py -m gaia_cli scan</span></pre>
-              </div>
+              <div class="os-panel active" data-os="unix" role="tabpanel"><pre><span class="cmd">gaia scan</span></pre></div>
+              <div class="os-panel" data-os="win" role="tabpanel"><pre><span class="cmd">py -m gaia_cli scan</span></pre></div>
+              <div class="os-panel" data-os="pipx" role="tabpanel"><pre><span class="cmd">gaia scan</span></pre></div>
             </div>
           </li>
-          <li class="rite-step">
+          <li class="rite-step" id="push-for-review">
             <div class="rite-meta">
-              <span class="rite-numeral" aria-hidden="true">IV.</span>
+              <span class="rite-numeral" aria-hidden="true">III.</span>
               <div class="rite-desc">
-                <strong>Push for review</strong>
-                <p>Submit your repository.</p>
+                <strong>Push</strong>
+                <p>Preview with <code>gaia push --dry-run</code>, then submit.</p>
               </div>
             </div>
             <div class="rite-term">
-              <div class="os-tabs" role="tablist" aria-label="Operating System selection">
-                <button type="button" class="os-tab active" data-os="unix" onclick="switchOsTab(this)" role="tab" aria-selected="true">macOS · Linux</button>
-                <button type="button" class="os-tab" data-os="win" onclick="switchOsTab(this)" role="tab" aria-selected="false">Windows</button>
-              </div>
-              <div class="os-panel active" data-os="unix" role="tabpanel">
-                <pre><span class="cmd">gaia push</span></pre>
-              </div>
-              <div class="os-panel" data-os="win" role="tabpanel">
-                <pre><span class="cmd">py -m gaia_cli push</span></pre>
-              </div>
+              <div class="os-panel active" data-os="unix" role="tabpanel"><pre><span class="cmd">gaia push</span></pre></div>
+              <div class="os-panel" data-os="win" role="tabpanel"><pre><span class="cmd">py -m gaia_cli push</span></pre></div>
+              <div class="os-panel" data-os="pipx" role="tabpanel"><pre><span class="cmd">gaia push</span></pre></div>
             </div>
           </li>
         </ol>
 
         <!-- Post-register: optional follow-ups that don't gate the contribution. -->
         <details class="rite-steps-after">
-          <summary>After you've registered <span class="rite-after-hint">— optional follow-ups</span></summary>
-          <ol class="rite-steps rite-steps--after" start="5">
+          <summary>Continue with Gaia <span class="rite-after-hint">Optional follow-ups</span></summary>
+          <ol class="rite-steps rite-steps--after" start="4">
           <li class="rite-step">
             <div class="rite-meta">
-              <span class="rite-numeral" aria-hidden="true">V.</span>
+              <span class="rite-numeral" aria-hidden="true">IV.</span>
               <div class="rite-desc">
-                <strong>Bond your agent MCP</strong>
-                <p>Wire Gaia to Claude Code in one command.</p>
+                <strong>Bond your agent</strong>
+                <p>Give an MCP-compatible agent access to the Registry.</p>
               </div>
             </div>
             <div class="rite-term">
@@ -669,49 +701,93 @@
           </li>
           <li class="rite-step">
             <div class="rite-meta">
-              <span class="rite-numeral" aria-hidden="true">VI.</span>
+              <span class="rite-numeral" aria-hidden="true">V.</span>
               <div class="rite-desc">
-                <strong>Explore interactively (optional)</strong>
-                <p>Launch the agent-first Terminal UI with no arguments.</p>
+                <strong>Open the Terminal UI</strong>
+                <p>Browse Gaia without memorising commands.</p>
               </div>
             </div>
             <div class="rite-term">
-              <div class="os-tabs" role="tablist" aria-label="Operating System selection">
-                <button type="button" class="os-tab active" data-os="unix" onclick="switchOsTab(this)" role="tab" aria-selected="true">macOS · Linux</button>
-                <button type="button" class="os-tab" data-os="win" onclick="switchOsTab(this)" role="tab" aria-selected="false">Windows</button>
-              </div>
-              <div class="os-panel active" data-os="unix" role="tabpanel">
-                <pre><span class="cmd">gaia</span></pre>
-              </div>
-              <div class="os-panel" data-os="win" role="tabpanel">
-                <pre><span class="cmd">py -m gaia_cli</span></pre>
-              </div>
-              <div class="qs-tip mt-sm"><span class="qs-tip-icon">💡</span><span>The Terminal UI is new and experimental — designed for AI agents like Claude Code and Codex. Keyboard-native, fuzzy searchable, no CLI memorization required.</span></div>
+              <div class="os-panel active" data-os="unix" role="tabpanel"><pre><span class="cmd">gaia</span></pre></div>
+              <div class="os-panel" data-os="win" role="tabpanel"><pre><span class="cmd">py -m gaia_cli</span></pre></div>
+              <div class="os-panel" data-os="pipx" role="tabpanel"><pre><span class="cmd">gaia</span></pre></div>
+              <div class="qs-tip mt-sm"><span class="qs-tip-icon">◇</span><span>The Terminal UI is experimental: keyboard-native, fuzzy searchable, and built for agent-driven work.</span></div>
             </div>
           </li>
           </ol>
         </details>
       </div>
 
-      <!-- Path B — Unclaimed Ultimates -->
-      <div class="path-b" id="ultimates">
-        <div class="path-plate-num">Path B — Unclaimed Ultimates</div>
-        <h2>Claim an Ultimate</h2>
-        <p class="path-intro mt-sm">The highest-tier skills in the registry. If you own an ultimate, claim your badge for your README — or implement a new one to get on the list.</p>
-        <div class="ultimates-list" id="ultimatesList" aria-live="polite">
-          <div class="ult-loading">Loading ultimates…</div>
-        </div>
-        <div class="path-cta" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;">
-          <a href="https://github.com/gaia-research/gaia-skill-tree/issues" target="_blank" rel="noopener" class="btn btn-ghost propose-cta text-sm">
-            <svg class="ico propose-gh" width="14" height="14" aria-hidden="true"><use href="assets/icons.svg#github"/></svg>
-            Propose a new Ultimate →
-          </a>
-          <a href="badges/" class="btn btn-ghost propose-cta text-sm">
-            <svg class="ico propose-gh" width="14" height="14" aria-hidden="true"><use href="assets/icons.svg#seal-diamond"/></svg>
-            Get Badges →
-          </a>
-        </div>
+      <!-- Path B — Delegate to an agent -->
+      <div class="path-b path-b--prompts" id="agent-path">
+        <div class="path-plate-num">Path B — Agent</div>
+        <h2>Prompt Your Agent</h2>
+        <p class="path-intro mt-sm">Your agent handles the mechanics and asks before submitting.</p>
 
+        <div class="agent-container">
+          <div class="agent-tabs" role="tablist" aria-label="Prompt options">
+            <button type="button" class="os-tab active" data-os="full-repo" onclick="switchOsTab(this)" role="tab" aria-selected="true">Full Repo</button>
+            <button type="button" class="os-tab" data-os="standalone" onclick="switchOsTab(this)" role="tab" aria-selected="false">Standalone Skills</button>
+          </div>
+
+          <div class="agent-repo-field" aria-label="Optional target repository">
+            <svg class="ico" width="14" height="14" aria-hidden="true"><use href="assets/icons.svg#github"/></svg>
+            <input type="url" id="agentRepoInput" placeholder="https://github.com/owner/repo (optional)" autocomplete="off" spellcheck="false">
+          </div>
+
+          <div class="agent-panels">
+            <div class="os-panel active" data-os="full-repo" role="tabpanel">
+              <section class="agent-prompt" aria-labelledby="agentRepoTitle">
+                <pre id="agentRepoPrompt" class="agent-prompt-body">Work in my current repository and register it with Gaia. The Gaia CLI operates inside the target repository. If a target URL is provided and it is not already available locally, clone a temporary copy and work there.
+
+1. Read the current instructions at https://github.com/gaia-research/gaia-skill-tree. Install Gaia if missing; if it already exists, upgrade `gaia-cli` with its package manager before continuing. Print `gaia version` and report the install method used.
+2. Run `gaia init --yes` inside the target repository. If `.gaia/config.toml` already exists, inspect it first and ask before replacing it; only then use `gaia init --force --yes`.
+3. Run `gaia scan`. If scanning fails, stop and show the error rather than continuing with stale state.
+4. Run `gaia push --dry-run`. This must only print the proposed batch; do not open an issue or write an Intake submission.
+5. Summarise detected skills, proposed evidence, attribution, warnings, and exactly what the real push will submit.
+6. Ask: “Submit this Gaia Intake now? [Y/n]”
+7. Only after I confirm, run `gaia push --yes` and return the resulting Intake issue or pull-request URL. Never use `git commit` or `git push` on the target repository, and do not edit Registry data by hand.
+8. If a temporary clone was used, optionally ask if I want to delete it.</pre>
+              </section>
+            </div>
+
+            <div class="os-panel" data-os="standalone" role="tabpanel">
+              <div id="agentSkillFetcher" class="agent-skill-fetcher" hidden>
+                <div class="agent-skill-fetcher-header">
+                  <span class="agent-skill-fetcher-title">Found GitHub URL. Select skills to include?</span>
+                  <button type="button" id="fetchSkillsBtn" class="btn btn-ghost" style="padding:.2rem .6rem;font-size:.7rem;min-height:auto">Fetch SKILL.md files</button>
+                </div>
+                <div id="agentSkillTools" class="agent-skill-tools" hidden>
+                  <input type="text" id="agentSkillSearch" class="agent-skill-search" placeholder="Filter skills..." autocomplete="off">
+                  <div class="agent-skill-bulk">
+                    <button type="button" id="agentSkillSelectAll">All</button>
+                    <button type="button" id="agentSkillSelectNone">None</button>
+                  </div>
+                </div>
+                <div id="agentSkillCheckboxes" class="agent-skill-checkboxes"></div>
+              </div>
+              <section class="agent-prompt" aria-labelledby="agentStandaloneTitle">
+                <pre id="agentStandalonePrompt" class="agent-prompt-body">Prepare one standalone skill for Gaia Intake on my behalf. The Gaia CLI operates inside the target repository. If a target URL is provided and it is not already available locally, clone a temporary copy and work there.
+
+Use https://github.com/gaia-research/gaia-skill-tree as the source of truth and follow `.github/ISSUE_TEMPLATE/new_skill_intake.yml` exactly.
+
+1. Determine my authenticated GitHub username with `gh api user --jq .login` and show it to me.
+2. Clarify the skill name, falsifiable capability, source repository, and any evidence I provide.
+3. Check the existing Registry for overlap before proposing a new kebab-case ID.
+4. Curate real, resolvable evidence. Include my supplied evidence, preserve its source, use GitHub `blob/` links rather than `tree/`, and never invent metrics or claims.
+5. Treat this as `self-made` and attribute the named submission to my authenticated GitHub username only if the sources confirm I am the Origin Contributor. If they indicate another origin, stop and explain the attribution conflict.
+6. Draft the complete Yggdrasil II Intake YAML, including `basic` or `fusion`, prerequisites, attribution, Grade B-or-better evidence, and the optional named block when valid. Validate it against the issue template; if Gaia is installed, also run `gaia push --from-file skills.yml --dry-run` and treat any failure as blocking.
+7. Before opening anything, summarise the proposed skill, attribution, evidence, exact issue title, and the validated YAML. Ask: “Open this skill Intake as @&lt;my-handle&gt;? [Y/n]”
+8. Only after I confirm, submit through the Skill Intake issue template—or run `gaia push --from-file skills.yml --yes`—and return the issue URL. Never use both routes, never commit or push to the target repository, and do not modify canonical Registry files directly.
+9. If a temporary clone was used, optionally ask if I want to delete it.</pre>
+              </section>
+            </div>
+          </div>
+        </div>
+        <p class="agent-prompt-warning">
+          <svg class="ico" width="13" height="13" aria-hidden="true"><use href="assets/icons.svg#info"/></svg>
+          <span>Always review an agent's proposed plan before giving it permission to push.</span>
+        </p>
       </div>
 
     </div>
@@ -1501,6 +1577,7 @@
   <!-- ─── SCRIPTS ─── -->
   <!-- icons.js already loaded in <head> so gaiaIcon() is available before any of these. -->
   <script src="js/atlas-helpers.js?v=6.3.17"></script>
+  <script src="js/world-tree-layout.js?v=6.3.17"></script>
   <script src="js/skill-graph.js?v=6.3.17"></script>
   <script src="js/hud-toggle.js?v=6.3.17"></script>
   <script src="js/scroll-reveal.js?v=6.3.17"></script>
@@ -1546,6 +1623,9 @@
 
   <!-- ─── HALL OF HEROES FULLSCREEN OG VIEW ─── -->
   <div id="hohFullscreenModal" class="hoh-fs-modal" aria-hidden="true" tabindex="-1">
+    <div class="hoh-fs-parallax-bg" aria-hidden="true">
+      <img src="assets/world-tree/yggdrasil-backdrop-941.webp" alt="">
+    </div>
     <div class="hoh-fs-header">
       <button class="hoh-fs-btn hoh-fs-btn--close" data-fs-action="close" title="Close modal" aria-label="Close modal">
         <svg class="ico" width="16" height="16" aria-hidden="true"><use href="assets/icons.svg#close-x"></use></svg>

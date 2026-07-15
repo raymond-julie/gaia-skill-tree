@@ -4,6 +4,58 @@ Maintained by the Orchestrator agent. Newest entries first within each section.
 
 ---
 
+## State Snapshot (2026-07-15, session — Binary-master history purge + main→staging merge integration; fresh aggregate PR)
+
+### TLDR
+- **Purged all ascension/design binary masters from ALL git history** via `git-filter-repo` (95 PNGs + 3 MP4s). Repo is webp-only for those assets now; a fresh clone is **~134 MB / 41% lighter** (329→195 MB). `.gitignore` guard added so they can't be re-tracked.
+- **Integrated `main` into staging by MERGE** (not rebase) — staging now contains main's 65 unique commits (security fixes, schema #1151, `scan --dir` #1159, favorchurch #1160, releases → v6.8.8). This became the ratified branch strategy (recorded in ORCHESTRATOR.md).
+- **Opened fresh aggregate PR #1185** (`dev/yggdrasil-ii-staging` → `main`, draft) superseding auto-closed #1005/#1171.
+- Operation was planned → adversarially reviewed → rehearsed on throwaway mirror → founder-gated → executed. PRISTINE mirror backup retained for rollback.
+
+### What changed this session
+| Layer | State |
+|---|---|
+| Diagnosis: why #1005 conflicted | ✅ add/add binary PNG conflicts — both main & staging independently committed divergent ascension assets past a shared v6.5.3 merge-base |
+| Plan → review → edit chain | ✅ planner drafted, adversarial reviewer found 4 live-verified blockers (rebase base, glob gaps, conflict count, dropped merge commits), plan corrected |
+| filter-repo purge (all refs) | ✅ 95 PNG + 3 MP4 targets expunged from all history; keeps (og, benchmark, webp, handover .md, loop mp4s) verified intact |
+| Integration by merge | ✅ main merged into staging; source files (`fuse.py`/`impl.py`) merged retaining BOTH intents; index.html kept V4 hero |
+| Verification | ✅ fresh-clone proof: targets gone, keeps survive, staging-contains-main, production homepage has no dead image links |
+| Real-remote push | ✅ 16 side branches + 364 tags + main + staging force-pushed (no branch protection existed) |
+| Commit-identity audit + correction | ✅ two worker-authored commits carried an unapproved global identity; rewritten to the approved identity via scoped `--email-callback`, main+staging re-pushed, 0 unapproved identities remain |
+| ORCHESTRATOR.md | ✅ recorded merge-based branch strategy, no-binary-masters rule, and worker commit-identity enforcement |
+
+### Branches at end of session
+| Branch | Head SHA | Status |
+|---|---|---|
+| `main` | `703ca2d7` | Rewritten (PNG-free) + guard commit; force-pushed; Pages source |
+| `dev/yggdrasil-ii-staging` | `ca170d5d` | Rewritten + main merged + memory/rule commits; PR #1185 head |
+| 16 side branches + 364 tags | (rewritten) | Force-pushed PNG-free; unaffected by the identity fix |
+| PRISTINE backup mirror | `f54c4716` (orig main) | Offline rollback source in scratch; keep until confirmed healthy |
+
+### Issues + PRs touched
+- **PR #1185** — fresh aggregate staging→main (draft). Opened this session.
+- **PR #1005 / #1171** — auto-closed by the history rewrite; un-reopenable. #1171 was alignment-only. #1005 superseded by #1185.
+
+### Routing — where things live now
+- Purge/integration plan: `C:/Users/C5396183/gaia-purge-plan-v2.md`; full evidence log + PRISTINE mirror + scratch clones under the OS temp `gaia-purge/` dir.
+- Branch/identity/binary-master rules: `founder/ORCHESTRATOR.md` (Repo Context invariants).
+- Served runtime unchanged on staging (V4 hero); `main` still shows pre-V4 homepage until #1185 merges.
+
+### Lessons / hazards preserved
+- **Never track binary masters** — they produce unmergeable add/add conflicts on divergent branches and bloat every clone. Only optimized webp/SVG belong in-repo.
+- **Integrate by merge, not rebase** — rebase silently drops merge commits and multiplies conflict rounds; merge resolves once and preserves topology.
+- **Enforce worker commit identity** — subagents in fresh clones can inherit an unapproved global git identity; set repo-local identity or `-c user.email/name`, and audit `git log --format='%ae'` before pushing. Correct any slip with a scoped `--email-callback` before opening a PR.
+- **History rewrites invalidate everything** — all branch/tag SHAs changed; every other clone and the bot crawler must re-clone or hard-reset. Open PRs auto-close.
+- Always rehearse a destructive rewrite on a throwaway `--mirror` first; keep a PRISTINE offline backup; gate the irreversible push on explicit founder approval.
+
+### Open questions for next orchestrator
+1. When the sprint's second half is done, mark PR #1185 ready and deliver staging → main.
+2. After confirming remote health over a day or two, clear the scratch `gaia-purge/` dir (PRISTINE mirror included).
+3. Pre-existing history carries legacy non-canonical author identities (out of scope this session) — decide separately whether a broader identity normalization is warranted.
+
+### Token cost (this session)
+Not separately metered; no telemetry inferred.
+
 ## State Snapshot (2026-07-15, session — Ascension Overdrive V4 commission and merge closeout)
 
 ### TLDR

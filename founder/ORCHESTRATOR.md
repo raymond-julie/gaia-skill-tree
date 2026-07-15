@@ -173,6 +173,8 @@ Key invariants to carry in this session:
 - **Auto-sync never touches docs/badges/**: the 2026-06-24 wipe incident is codified in sync-artifacts.yml.
 - **Branch scope is enforced by CI**: design/* → docs/ only; cli/* → src/ only; schema/* → registry/schema/ only.
 - **Verifier guard**: mutating `gaia dev` subcommands require 4★ named skill or GAIA_OPERATOR_OVERRIDE=1.
+- **Branch strategy — integrate by MERGE, not rebase**: to bring `main`'s updates into the integration branch (`dev/<sprint>`), merge `origin/main` INTO staging. Never rebase staging (or `main`) for routine integration — plain `git rebase` silently drops merge commits (needs `--rebase-merges`) and multiplies conflict rounds across replayed commits. A merge resolves source conflicts once, preserves merge topology, and keeps the aggregate PR coherent. Final delivery is always staging → `main` via the aggregate PR. Rebase is reserved for deliberate linear-history cleanups, explicitly chosen.
+- **No binary masters in git**: only optimized `.webp` (and native SVG) enter the repo; PNG/TIFF/MP4 design masters live outside git (founder keeps local backups). Exempt tracked PNGs: `docs/og/**`, `docs/assets/og-image.png`, `docs/benchmarks/assets/*.png`, third-party `node_modules` logos. Purging already-tracked masters from history is a `git-filter-repo` all-refs rewrite, rehearsed on a throwaway `--mirror` clone, with a PRISTINE mirror backup and a MANDATORY founder gate before any force-push to `main`.
 - CLAUDE.md and founder/CLAUDE.md are the canonical rule sources — read them when in doubt.
 
 ---

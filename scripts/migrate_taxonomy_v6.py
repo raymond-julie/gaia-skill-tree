@@ -209,7 +209,8 @@ def _derive_v6_type(data: dict, path: Path) -> tuple[str, str | None]:
 def migrate_starless_nodes(
     dry_run: bool,
     stats: dict[str, Any],
-) -> None:
+) -> dict[str, str]:
+    """Phase A wrapper — returns a mapping of nodeId -> legacyType for Phase B."""
     """Phase A: rewrite type fields and reorganise directories."""
     print("\n=== Phase A: Starless node type rewrite + directory reorganisation ===")
 
@@ -229,6 +230,8 @@ def migrate_starless_nodes(
     retyped: list[dict] = []
     anomalies: list[dict] = []
     already_done: int = 0
+    # Track legacy type for each node (nodeId -> legacy type) for Phase B use
+    legacy_type_map: dict[str, str] = {}
 
     for src_dir, dir_label in all_source_dirs:
         if not src_dir.exists():
@@ -240,6 +243,9 @@ def migrate_starless_nodes(
             node_id    = data.get("id", node_path.stem)
             legacy_type = data.get("type", "")
             prereqs    = data.get("prerequisites") or []
+
+            # Track legacy type BEFORE any rewrite (used by Phase B for details text)
+            legacy_type_map[node_id] = legacy_type
 
             # Idempotency: if already in fusion/ with type=fusion, skip
             if str(node_path).replace("\\", "/").find("/fusion/") != -1 and legacy_type == "fusion":
@@ -346,6 +352,7 @@ def migrate_starless_nodes(
     print(f"  Retyped:     {len(retyped)} nodes")
     print(f"  Anomalies:   {len(anomalies)}")
     print(f"  Already done:{already_done}")
+    return legacy_type_map
 
 
 # ---------------------------------------------------------------------------
@@ -391,6 +398,7 @@ def migrate_named_skills(
     allow_5star_demote: bool,
     genericSkillMap: dict,
     namedSkillMap: dict,
+    legacy_type_map: dict[str, str],
     stats: dict[str, Any],
 ) -> None:
     """Phase B: append type_change events + evaluate 4★ branch gates."""
@@ -413,8 +421,21 @@ def migrate_named_skills(
         skill_id = fm.get("id") or path.stem
         ref = fm.get("genericSkillRef") or ""
         generic = genericSkillMap.get(ref) or {}
-        generic_legacy_type = generic.get("type", "")
-        generic_v6_type = _generic_type_after_migration(generic)
+        # Derive legacy description from structural truth:
+        # - 0 prereqs: generic was basic → basic (unchanged)
+        # - >=1 prereqs: generic was extra or ultimate → fusion (either way: type_change)
+        # legacy_type_map captures the original type during Phase A; fall back to
+        # structural inference when it is absent (idempotency re-runs).
+        generic_prereqs_count = len(generic.get("prerequisites") or [])
+        raw_legacy = legacy_type_map.get(ref, "")
+        if raw_legacy:
+            generic_legacy_type = raw_legacy
+        elif generic_prereqs_count == 0:
+            generic_legacy_type = "basic"
+        else:
+            # Was extra or ultimate — now fusion; we only know direction, not exact legacy
+            generic_legacy_type = "extra/ultimate"
+        generic_v6_type = LEGACY_TO_V6.get(generic_legacy_type, generic.get("type", "fusion") if generic_prereqs_count > 0 else "basic")
 
         # Idempotency: skip if already has type_change for Yggdrasil II migration
         timeline = fm.get("timeline")
@@ -433,15 +454,19 @@ def migrate_named_skills(
         ts = _now_iso()
 
         # --- type_change event for ALL 4★/5★ named skills ---
-        type_change_details = (
-            f"Generic parent '{ref}' type: {generic_legacy_type} → {generic_v6_type} "
-            f"(Yggdrasil II taxonomy migration #997)"
-            if generic_legacy_type and generic_legacy_type != generic_v6_type
-            else (
-                f"Generic parent '{ref}' type: {generic_v6_type} (unchanged — basic; "
+        if generic_prereqs_count > 0:
+            # Parent was extra or ultimate — now fusion
+            legacy_label = raw_legacy if raw_legacy else "extra/ultimate"
+            type_change_details = (
+                f"Generic parent '{ref}' type: {legacy_label} → fusion "
+                f"(Yggdrasil II taxonomy migration #997)"
+            )
+        else:
+            # Basic parent — type unchanged
+            type_change_details = (
+                f"Generic parent '{ref}' type: basic (unchanged; "
                 f"Yggdrasil II taxonomy migration #997)"
             )
-        )
         type_change_event: dict = {
             "timestamp": ts,
             "action": "type_change",
@@ -736,7 +761,7 @@ def main() -> int:
     print(f"Building namedSkillMap: {len(namedSkillMap)} named skills")
 
     # Phase A
-    migrate_starless_nodes(dry_run=dry_run, stats=stats)
+    legacy_type_map = migrate_starless_nodes(dry_run=dry_run, stats=stats)
 
     # Reload genericSkillMap after phase A writes (types may have changed on disk)
     if not dry_run:
@@ -758,6 +783,7 @@ def main() -> int:
         allow_5star_demote=args.allow5starDemote,
         genericSkillMap=genericSkillMap,
         namedSkillMap=namedSkillMap,
+        legacy_type_map=legacy_type_map,
         stats=stats,
     )
 

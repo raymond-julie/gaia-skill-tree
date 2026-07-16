@@ -19,7 +19,8 @@ was updated.  Evaluates each 4★ named skill against its branch gate:
       - generic_prereqs == 0 → origin = named.origin is True
       - generic_prereqs  > 0 → origin = contributor holds origin on ≥1 prereq
       Gate: origin AND TM ≥ 100 (grade A)
-    * Suite-branch 4★ (generic has suiteComponents): gate = TM ≥ 100
+    * Suite-branch 4★ (generic has suiteComponents): shares the Unique gate
+      (ratified 2026-07-16) — origin AND TM ≥ 100 (grade A)
     * 5★ (any branch): NEVER auto-demote — recorded as FOUNDER_CHECKPOINT.
       --allow-5star-demote is provided but NOT passed in normal operation.
 
@@ -539,21 +540,17 @@ def migrate_named_skills(
                 })
 
         elif level == "4★":
-            # Evaluate gate based on branch
-            if branch == "suite":
-                # Suite 4★ Extra gate: TM >= 100
-                gate_pass = tm >= TM_FLOOR_4STAR
-                origin_ok: bool | None = None
-                gate_detail = f"suite-branch TM={tm:.1f} ({'≥' if gate_pass else '<'} {TM_FLOOR_4STAR})"
-            else:
-                # Unique 4★ gate: origin + TM >= 100
-                origin_ok = _origin_ok_for_unique(fm, generic, genericSkillMap, namedSkillMap)
-                tm_ok = tm >= TM_FLOOR_4STAR
-                gate_pass = origin_ok and tm_ok
-                gate_detail = (
-                    f"unique-branch origin={origin_ok} TM={tm:.1f} "
-                    f"({'≥' if tm_ok else '<'} {TM_FLOOR_4STAR})"
-                )
+            # 4★ gate is identical for both branches (ratified 2026-07-16):
+            # Extra (suite) shares the Unique gate — origin + TM >= 100.
+            origin_ok: bool | None = _origin_ok_for_unique(
+                fm, generic, genericSkillMap, namedSkillMap
+            )
+            tm_ok = tm >= TM_FLOOR_4STAR
+            gate_pass = origin_ok and tm_ok
+            gate_detail = (
+                f"{branch}-branch origin={origin_ok} TM={tm:.1f} "
+                f"({'≥' if tm_ok else '<'} {TM_FLOOR_4STAR})"
+            )
 
             if gate_pass:
                 print(f"  [PASS] {skill_id}: {level} {gate_detail}")

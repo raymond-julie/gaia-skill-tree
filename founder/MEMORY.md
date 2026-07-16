@@ -4,6 +4,47 @@ Maintained by the Orchestrator agent. Newest entries first within each section.
 
 ---
 
+## State Snapshot (2026-07-16, session — catch-up read; PR #1185 CONFLICTING + CI RED; 3 failure categories catalogued; memory synced; next = fix CI then #998 Frontend)
+
+### TLDR
+- **Session was a catch-up read only** — no code written, no PRs opened. Task: sync memory with staging branch state.
+- **PR #1185 (`dev/yggdrasil-ii-staging → main`) is CONFLICTING + CI RED.** Three distinct failure categories found (see below). All are #999-scope fixes that belong in the current sprint before closing.
+- **EPIC #1002 progress:** 5+2 sub-issues effectively merged to staging (#994 ✅ #995 ✅ #996 ✅ #997 ✅ #1190 ✅ #1192 ✅ #1193 ✅). Remaining: **#998 Frontend**, **#999 CI guards** (partially done — CI still red), **#1000 Agent skills**.
+- **Auto-memory (`~/.claude/projects/.../memory/`) updated** — Sprint D references retired; Yggdrasil II project state written.
+
+### CI failures on PR #1185 (as of 2026-07-16T12:49)
+
+| Failure | Root cause | Fix path |
+|---|---|---|
+| **Guard B (docs-cohesion.yml)** — `FAIL Guard B: Banned synonyms found.` | `docs/guard-topology.md:85` reference table literally contains rarity-axis banned words (`legendary`, `epic`, `mythic`, `uncommon`) as documentation. Guard B's grep fires on the words themselves. | Exempt `docs/guard-topology.md` from Guard B's grep scope in `docs-cohesion.yml`, OR rewrite the table cells to avoid the literal tokens (e.g. backtick or paraphrase). Part of #999. |
+| **`test_extra_and_ultimate_no_longer_drifted` (tests/test_graph.py:384)** | Asserts `PALETTE["extra"]["fill"] == "#c084fc"` but gets `#38bdf8`. After Yggdrasil II collapsed `extra` → `fusion`, the palette key or canonical hex value diverged from the test's expectation. | Update test to reference the correct post-migration key/value (`fusion`?), or fix the palette lookup in `src/gaia_cli/`. Part of #999 or #998. |
+| **Multiple `test_promotion.py` failures** (`test_multiple_skills_mixed_eligibility`, `test_grade_c_fails_b_floor`, `test_ungraded_entry_ignored`) | Tests encode old Evidence Floor semantics. `_meets_evidence_floor` now returns `True` where old tests expected `False` — because the Evidence Floor was removed in #997. Tests were not updated. | Update test expectations to reflect Evidence-Floor-removed logic. Part of #999. |
+
+### CONFLICTING state
+PR #1185 has `mergeable: CONFLICTING` — staging has diverged from main. Before merging to main, staging needs a `git merge main` (or rebase) to resolve the conflict, then a fresh CI run.
+
+### What's needed before PR #1185 can merge
+1. **Fix the 3 CI failure categories above** (all #999 scope — dispatch a CI-fix agent).
+2. **Merge main into staging** to resolve the CONFLICTING state.
+3. **Land #998 Frontend** (heavy — AOV V4 assets C+D into skill plaques, World Tree topology, graph/explorer/named-skills readers, Ascension section copy, badges).
+4. **Land #1000 Agent skills** (refresh curation/audit/fusion prompts for new taxonomy).
+
+### Branches at end of session
+| Branch | Head | Status |
+|---|---|---|
+| `dev/yggdrasil-ii-staging` | `f8e96ff74` | PR #1185 open → main; CONFLICTING + CI RED (3 failures) |
+| `docs/yggdrasil-ii-memory-sync` | this commit | Memory-only update; merge into staging |
+
+### Open questions for next orchestrator
+1. Is the Guard B fix an exemption (1 line in the workflow) or a rewrite of `docs/guard-topology.md`? Exemption is simpler and less likely to break the doc's readability.
+2. `PALETTE["extra"]` — does the key exist post-migration or was it renamed to `fusion`? Read `src/gaia_cli/skill_graph.py` (or wherever PALETTE is defined) before dispatching the test fix.
+3. `test_promotion.py` failures — `_meets_evidence_floor` behaviour needs a spec comment explaining what the function is supposed to do now that Evidence Floor is removed. Is it always-True, or does it gate on TM only?
+
+### Token cost (this session)
+Orchestrator-only read session; no subagents spawned. Minimal spend (~10–20k tokens estimated; no pi-cost logging active).
+
+---
+
 ## State Snapshot (2026-07-16, session — Structured migration provenance + #999 guards + user-tree drift fix; 3 PRs MERGED to staging; next session = DESIGN)
 
 ### TLDR

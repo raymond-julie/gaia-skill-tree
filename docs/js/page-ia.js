@@ -95,16 +95,61 @@
         }
       });
     });
-    // Also treat awakened (status != "named") ultimate entries as claimed so they
+    // Topological branch resolver (Ygg II). Mirrors scripts/_tree_renderer.py
+    // _branch_of + generateProjections.branch_of: a 'suite' is any skill whose
+    // computeBranch resolves to 'suite' (type==='fusion' OR carries
+    // suiteComponents). The dead `type === 'ultimate'` read matched nothing
+    // post-migration #997 (only 'basic'|'fusion' exist) — that was the "0
+    // ultimates" ledger bug. Fall back to a local check if GaiaSemantics
+    // somehow failed to load.
+    function branchOf(s) {
+      if (window.GaiaSemantics && typeof window.GaiaSemantics.computeBranch === 'function') {
+        return window.GaiaSemantics.computeBranch(s, effLevelOf(s));
+      }
+      var hasSC = Array.isArray(s.suiteComponents) && s.suiteComponents.length > 0;
+      if (s.type === 'basic' && levelNum(effLevelOf(s)) >= 4 && !hasSC) return 'unique';
+      if (hasSC || s.type === 'fusion') return 'suite';
+      return 'standard';
+    }
+    // Effective star: namedMaxLevel (from projection) → claimed named level → level.
+    function effLevelOf(s) {
+      if (s.namedMaxLevel) return s.namedMaxLevel;
+      var c = claimedBy[s.id];
+      if (c && c.level) return c.level;
+      return s.level || 0;
+    }
+
+    // Also treat awakened (status != "named") suite entries as claimed so they
     // don't surface as free-to-claim in the ultimates list.
     (namedData.awaitingClassification || []).forEach(function (e) {
       var primary = e.genericSkillRef || (e.id && e.id.split('/').pop());
-      if (primary && byId[primary] && byId[primary].type === 'ultimate' && !claimedBy[primary]) {
+      if (primary && byId[primary] && branchOf(byId[primary]) === 'suite' && !claimedBy[primary]) {
         claimedBy[primary] = e;
       }
     });
 
-    var ultimates = skills.filter(function (s) { return s.type === 'ultimate'; });
+    // Every suite (topological). Then drop sub-component suites — a suite that
+    // is a direct/transitive prerequisite of another suite is not a top-level
+    // capstone. Mirrors _tree_renderer._sub_ultimate_ids so the homepage count
+    // matches tree.md's Ultimate section exactly.
+    var suiteIds = {};
+    skills.forEach(function (s) { if (branchOf(s) === 'suite') suiteIds[s.id] = true; });
+    var subIds = {};
+    (function () {
+      function walk(sid, visiting) {
+        if (visiting[sid]) return;
+        visiting[sid] = true;
+        var sk = byId[sid];
+        if (!sk) return;
+        (sk.prerequisites || []).forEach(function (pid) {
+          if (suiteIds[pid]) subIds[pid] = true;
+          walk(pid, visiting);
+        });
+      }
+      Object.keys(suiteIds).forEach(function (uid) { walk(uid, {}); });
+    })();
+
+    var ultimates = skills.filter(function (s) { return suiteIds[s.id] && !subIds[s.id]; });
     var unclaimed = ultimates.filter(function (u) { return !claimedBy[u.id]; });
     var apexCount = ultimates.length - unclaimed.length;
 
@@ -236,18 +281,29 @@
         var lvlN = levelNum(e.level);
         var is6Star = (lvlN === 6);
         var is5Star = (lvlN === 5);
-        var isUnique = (canonical.type === 'unique');
+        // Topological branch (Ygg II) — the dead `type === 'unique'` read never
+        // matched post-migration #997, silently disabling the unique-diversity
+        // guard below. Resolve via the shared resolver instead.
+        var branch = branchOf(canonical);
+        var isUnique = (branch === 'unique');
         if (!is6Star && !is5Star && !isUnique) return;
         if (canonical.level) e.level = canonical.level;
         allOrigin.push({
           entry: e,
           canonicalId: canonical.id,
+          // Raw canonical type ('basic'|'fusion') for downstream plaque
+          // rendering (plaque.computeBranch re-derives branch from it +
+          // suiteComponents); resolved branch cached for sort/diversity here.
           type: canonical.type || 'basic',
+          suiteComponents: canonical.suiteComponents,
+          branch: branch,
         });
       });
     });
-    // Sort by Trust Magnitude desc, then by level desc, then by type rank.
-    var TYPE_RANK = { ultimate: 0, unique: 1, extra: 2, basic: 3 };
+    // Sort by Trust Magnitude desc, then by level desc, then by branch rank.
+    // Keyed on the topological branch (suite/unique/standard), not the retired
+    // type enum — item.type now holds the resolved branch (see allOrigin push).
+    var TYPE_RANK = { suite: 0, unique: 1, standard: 2 };
     function heroTm(item) {
       return Number((item && item.entry && item.entry.trustMagnitude) || 0);
     }
@@ -256,7 +312,7 @@
       if (td !== 0) return td;
       var ld = levelNum(b.entry.level) - levelNum(a.entry.level);
       if (ld !== 0) return ld;
-      return (TYPE_RANK[a.type] || 9) - (TYPE_RANK[b.type] || 9);
+      return (TYPE_RANK[a.branch] || 9) - (TYPE_RANK[b.branch] || 9);
     });
 
     // Named count for ledger (count of all origin entries)
@@ -282,7 +338,7 @@
         if (td !== 0) return td;
         var ld = levelNum(b.entry.level) - levelNum(a.entry.level);
         if (ld !== 0) return ld;
-        return (TYPE_RANK[a.type] || 9) - (TYPE_RANK[b.type] || 9);
+        return (TYPE_RANK[a.branch] || 9) - (TYPE_RANK[b.branch] || 9);
       });
     });
     // Order contributors by their primary (best) skill TM.
@@ -292,11 +348,11 @@
       if (td !== 0) return td;
       var ld = levelNum(bi.entry.level) - levelNum(ai.entry.level);
       if (ld !== 0) return ld;
-      return (TYPE_RANK[ai.type] || 9) - (TYPE_RANK[bi.type] || 9);
+      return (TYPE_RANK[ai.branch] || 9) - (TYPE_RANK[bi.branch] || 9);
     });
     var top = contribOrder.slice(0, 8).map(function (c) { return byContrib[c]; });
     // Diversity guard — ensure ≥2 contributors whose group includes a Unique.
-    var hasUnique = function (group) { return group.some(function (it) { return it.type === 'unique'; }); };
+    var hasUnique = function (group) { return group.some(function (it) { return it.branch === 'unique'; }); };
     var uniqueProviding = top.filter(hasUnique).length;
     if (uniqueProviding < 2) {
       var needed = 2 - uniqueProviding;
@@ -331,6 +387,7 @@
             origin: e.origin,
             level: e.level,
             type: it.type,
+            suiteComponents: it.suiteComponents,
             genericSkillRef: e.genericSkillRef,
             canonicalId: it.canonicalId,
             trustMagnitude: e.trustMagnitude,

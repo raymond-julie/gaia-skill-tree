@@ -43,9 +43,10 @@
   // node:    the source skill object (carries .type, .suiteComponents).
   // effRank: the skill's effective star level ("5★" | 5 | "5" all accepted).
   //
-  // Read order mirrors resolveSemantics §3.2 and must not be reordered:
+  // Read order mirrors scripts/generateProjections.py branch_of() and
+  // resolveSemantics §3.2 and must not be reordered:
   //   1. unique = type === 'basic' && effRank >= 4 && !suiteComponents
-  //   2. suite  = suiteComponents present (length > 0)
+  //   2. suite  = suiteComponents present (length > 0) OR type === 'fusion'
   //   3. else     standard
   function computeBranch(node, effRank) {
     node = node || {};
@@ -57,8 +58,13 @@
     // 1. Unique FIRST — a Basic that ascended to elite rank without fusing.
     if (type === 'basic' && rank >= 4 && !hasSuiteComponents) return 'unique';
 
-    // 2. Suite — the generic parent carries suiteComponents.
-    if (hasSuiteComponents) return 'suite';
+    // 2. Suite — the generic parent carries suiteComponents, OR its type is
+    //    'fusion'. The Class S graph projection emits fusions WITHOUT an inline
+    //    suiteComponents array (the tree is encoded via prerequisites), so the
+    //    type check is load-bearing: without it every fusion collapses to
+    //    'standard' and read-time consumers (homepage ledger, "Claim an
+    //    Ultimate") count zero. Mirrors branch_of() L147-148.
+    if (hasSuiteComponents || type === 'fusion') return 'suite';
 
     // 3. Everything else is the standard (shared) branch.
     return 'standard';

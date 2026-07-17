@@ -106,7 +106,7 @@ def get_tier_label(meta, level):
 
 
 def get_tier_symbol(skill_type):
-    return {"basic": "○", "extra": "◇", "unique": "◉", "ultimate": "◆"}.get(skill_type, "·")
+    return {"basic": "○", "fusion": "◇"}.get(skill_type, "·")
 
 
 def _link_named_id(named_id, handle_rel=None):
@@ -155,21 +155,18 @@ def _build_skill_display(skill_id, skill_type, named_map=None, handle_rel=None,
             handle_rel = None  # no profile link for anonymous contributor
 
     named_id_display = _link_named_id(named_id, handle_rel)
-    if skill_type == "ultimate":
+    if skill_type == "fusion":
         if named_id:
             return named_id_display
         return f"/{skill_id}"
-    if skill_type == "unique":
-        return named_id_display if named_id else f"/{skill_id}"
-    if skill_type == "extra":
-        return named_id_display if named_id else f"/{skill_id}"
+    # skill_type == "basic" (and any legacy type for forward-compat)
     return named_id_display if named_id else f"/{skill_id}"
 
 def _sorted_ultimates(skills):
-    # Receives only top-level Ultimates (sub-components already filtered by
+    # Receives only top-level Fusions (sub-components already filtered by
     # render_tree). Sort by name so the canonical tree is deterministic.
     return sorted(
-        [s for s in skills if s.get("type") == "ultimate"],
+        [s for s in skills if s.get("type") == "fusion"],
         key=lambda s: s.get("name", "")
     )
 
@@ -398,7 +395,7 @@ def main():
                         f.write(f"- {unlock_id}\n")
                 f.write("\n")
 
-            if skill_type in ["extra", "ultimate"]:
+            if skill_type == "fusion":
                 f.write("## Fusion Condition\n")
                 conditions = skill.get("conditions", "")
                 if not conditions:
@@ -488,45 +485,31 @@ def main():
 
         f.write("\n")
 
-        # Unique Skills section
-        unique_skills = [s for s in skills if s.get("type") == "unique"]
-        if unique_skills:
-            f.write("## Uniques\n\n")
-            f.write("*Singular mastery skills — graph-isolated, with named implementations. Promoted via `/gaia promote --unique`.*\n\n")
-            f.write("| Name | Class | Top ★ | Skill Call |\n")
-            f.write("|---|---|---|---|\n")
-            for skill in unique_skills:
-                reg_display = _build_skill_display(skill.get('id'), "unique", named_map, _REG_HANDLE_REL,
-                                                   named_level_map=named_level_map,
-                                               named_entry_level=named_entry_level)
-                name_display = f"◉ {reg_display}"
-                skill_call = f"`/{skill.get('id')}`"
-                f.write(f"| {name_display} | Unique Skill | {_top_star(skill['id'])} | {skill_call} |\n")
-            f.write("\n")
+        # Unique Skills section — under Yggdrasil II, type=unique is retired
+        # (unique is a branch, not a type). This section remains for forward-compat
+        # but will be empty for any post-migration registry.
 
         f.write("## Basics\n\n")
         f.write("*Basic-tier skills with no connections to the upgrade graph — no prerequisites and not referenced as a component of any other skill.*\n\n")
         f.write("| Name | Class | Top ★ | Skill Call |\n")
-        f.write("|---|---|---|---|\n")
+        f.write("|---|---|\n")
         for skill in skills:
             if skill["id"] not in orphan_ids:
                 continue
-            if skill.get("type") == "unique":
-                continue
             name_display = f"○ {skill.get('name')}"
             skill_call = f"`/{skill.get('id')}`"
-            f.write(f"| {name_display} | Intrinsic Skill | {_top_star(skill['id'])} | {skill_call} |\n")
+            f.write(f"| {name_display} | Basic | {_top_star(skill['id'])} | {skill_call} |\n")
 
         f.write("\n")
 
-        # Unclaimed Ultimates section
-        unclaimed = [s for s in skills if s.get("type") == "ultimate" and s["id"] not in named_map]
+        # Unclaimed Fusions section (previously "Ultimate Skills Awaiting Name")
+        unclaimed = [s for s in skills if s.get("type") == "fusion" and s["id"] not in named_map]
         if unclaimed:
-            f.write("## Ultimate Skills Awaiting Name\n\n")
+            f.write("## Fusions Awaiting Name\n\n")
             f.write(
-                "*These Ultimate skills have no named implementation yet. "
+                "*These Fusion skills have no named implementation yet. "
                 "The first contributor to submit a valid named implementation "
-                "claims the title slot.  Submit with `gaia propose /<skill_id> --ultimate` and open a PR.*\n\n"
+                "claims the title slot.  Submit with `gaia propose /<skill_id>` and open a PR.*\n\n"
             )
             f.write("| Skill Call | Prerequisites |\n")
             f.write("|---|---|\n")
@@ -545,7 +528,7 @@ def main():
         # Phase 8d — same relative-path convention as registry.md.
         _COMBO_HANDLE_REL = "../docs/u/"
         for skill in skills:
-            if skill.get("type") in ["extra", "ultimate"]:
+            if skill.get("type") == "fusion":
                 skill_type = skill.get("type")
                 symbol = get_tier_symbol(skill_type)
                 type_label = get_type_label(meta, skill_type)

@@ -355,9 +355,9 @@
         <span class="rm-item"><strong>Generator</strong> gaia-content-engine v{{ report.generatorVersion }}</span>
       </div>
       <nav class="report-navlinks" aria-label="Report navigation">
-        <a href="{{ report.urls.previous }}">← Previous week</a>
-        <a href="{{ report.urls.archive }}">Archive</a>
-        <a href="{{ report.urls.json }}">Canonical JSON</a>
+        <a href="{{ report.urls.previous | replace('https://gaiaskilltree.com', '') }}">← Previous week</a>
+        <a href="{{ report.urls.archive | replace('https://gaiaskilltree.com', '') }}">Archive</a>
+        <a href="{{ report.urls.json | replace('https://gaiaskilltree.com', '') }}">Canonical JSON</a>
       </nav>
     </header>
 
@@ -380,7 +380,7 @@
             <tr>
               <td class="rank">{{ loop.index }}</td>
               <td>
-                <a class="rt-skill" href="{{ e.url }}">{{ e.name }}</a>
+                <a class="rt-skill" href="{{ e.url | replace('https://gaiaskilltree.com', '') }}">{{ e.name }}</a>
                 <span class="rt-contributor">@{{ e.contributor }}</span>
               </td>
               <td><span class="rt-level">{{ e.level }}</span></td>
@@ -414,7 +414,7 @@
             {% for e in ascended.entries %}
             <tr>
               <td>
-                <a class="rt-skill" href="{{ e.url }}">{{ e.name }}</a>
+                <a class="rt-skill" href="{{ e.url | replace('https://gaiaskilltree.com', '') }}">{{ e.name }}</a>
                 <span class="rt-contributor">@{{ e.contributor }}</span>
               </td>
               <td>
@@ -457,7 +457,7 @@
               <tbody>
                 {% for s in b.skills %}
                 <tr>
-                  <td><a class="rt-skill" href="{{ s.url }}">{{ s.id }}</a></td>
+                  <td><a class="rt-skill" href="{{ s.url | replace('https://gaiaskilltree.com', '') }}">{{ s.id }}</a></td>
                   <td><span class="rt-level">{{ s.level }}</span></td>
                   <td class="num">{{ '%.1f' | format(s.trustMagnitude) }}{% if s.trustGrade %}<span class="ev-grade" data-grade="{{ s.trustGrade }}">{{ s.trustGrade }}</span>{% endif %}</td>
                   <td>{% if s.origin %}<span class="rt-tag rt-tag--origin">origin</span>{% else %}<span class="rt-muted">—</span>{% endif %}</td>
@@ -474,7 +474,7 @@
     </section>
 
     <footer class="report-caption">
-      Compiled mechanically by the <a href="https://github.com/gaia-research/gaia-skill-tree/tree/main/scripts/contentEngine">Gaia Content Engine</a> from <a href="/api/v1/trending/">/api/v1/trending/*.json</a>, recomputed daily. The <a href="{{ report.urls.json }}">canonical JSON</a> is frozen and permanent. Salvage layer: <code>{{ report.salvageLayer }}</code>.
+      Compiled mechanically by the <a href="https://github.com/gaia-research/gaia-skill-tree/tree/main/scripts/contentEngine">Gaia Content Engine</a> from <a href="/api/v1/trending/">/api/v1/trending/*.json</a>, recomputed daily. The <a href="{{ report.urls.json | replace('https://gaiaskilltree.com', '') }}">canonical JSON</a> is frozen and permanent. Salvage layer: <code>{{ report.salvageLayer }}</code>.
     </footer>
 
   </main>

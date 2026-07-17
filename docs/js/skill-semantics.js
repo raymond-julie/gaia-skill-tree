@@ -5,9 +5,9 @@
  * consumer (plaque.js, heroes.js, named-skills.js, leaderboard.js,
  * skill-explorer.js) derives branch + rank vocabulary identically.
  *
- * §Ygg-II rubric E1: branch MUST be derived at read-time — NEVER from
- * skill.type === 'ultimate'|'unique'|'extra' and NEVER from a stored
- * branch/tier field. The only valid `type` values are 'basic' and 'fusion'.
+ * §Ygg-II rubric E1: branch MUST be derived at read-time — NEVER from any
+ * stored type/branch/tier field. type is NOT consulted (Ygg-II v2 amendment
+ * 2026-07-14): rank>=4 && !suiteComponents → unique, regardless of type.
  *
  * §Ygg-II rubric E2: rank WORDS fork by branch at 4★+. BANNED anywhere:
  * 'Transcendent', 'Hardened'. Correct ladder:
@@ -43,22 +43,28 @@
   // node:    the source skill object (carries .type, .suiteComponents).
   // effRank: the skill's effective star level ("5★" | 5 | "5" all accepted).
   //
-  // Read order mirrors resolveSemantics §3.2 and must not be reordered:
-  //   1. unique = type === 'basic' && effRank >= 4 && !suiteComponents
+  // Read order (Ygg-II v2 amendment 2026-07-14 — type is NEVER consulted):
+  //   1. unique = effRank >= 4 && !suiteComponents  (origin implied by rank)
   //   2. suite  = suiteComponents present (length > 0)
   //   3. else     standard
+  //
+  // Fallback contract: a named skill with rank >= 4 and no suiteComponents
+  // derives branch='unique' regardless of whether .type is present, absent,
+  // or null — mirrors trustMagnitude.py computeBranch (Ygg-II §3.2).
   function computeBranch(node, effRank) {
     node = node || {};
-    var type = node.type;
     var rank = levelNum(effRank != null ? effRank : node.level);
     var hasSuiteComponents = Array.isArray(node.suiteComponents)
       && node.suiteComponents.length > 0;
 
-    // 1. Unique FIRST — a Basic that ascended to elite rank without fusing.
-    if (type === 'basic' && rank >= 4 && !hasSuiteComponents) return 'unique';
-
-    // 2. Suite — the generic parent carries suiteComponents.
+    // 1. Suite FIRST — the generic parent carries suiteComponents.
     if (hasSuiteComponents) return 'suite';
+
+    // 2. Unique — rank >= 4 with no suiteComponents (origin implied).
+    //    type field is intentionally ignored: typeless named skills (e.g.
+    //    origin:true, level:4★, no type:) must resolve to 'unique', not
+    //    'standard'. Matches trustMagnitude.py computeBranch exactly.
+    if (rank >= 4) return 'unique';
 
     // 3. Everything else is the standard (shared) branch.
     return 'standard';

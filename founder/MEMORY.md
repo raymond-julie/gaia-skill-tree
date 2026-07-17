@@ -4,6 +4,59 @@ Maintained by the Orchestrator agent. Newest entries first within each section.
 
 ---
 
+## State Snapshot (2026-07-18, session — Ygg II taxonomy-authority handover ratified + amended; 8-scout blast-radius sweep; Phase 1 scaffolded)
+
+### TLDR
+- **Ratified + committed** the Yggdrasil II Taxonomy Resolution Authority handover (`founder/handovers/YGGDRASIL_II_TAXONOMY_AUTHORITY.md`) — build-first cut: one build-time authority (`src/gaia_cli/taxonomy.py`) resolves branch/rank/medallion, consumers read the resolved field, all resolvers deleted. Reverses Ygg II rubric E1 (read-time derivation).
+- **8-scout blast-radius sweep** (2 passes) mapped the full radius beyond the handover's original 4-resolver inventory. Found **8+ uncatalogued derivers**; caught one HIGH-severity trap (tree.md collapse) and one false-positive (leaderboard.js is clean — verified by ground-truth read).
+- **Closeout strategy locked** (Marco): build-first unchanged; two guardrails + one principle added — additive wire format, delete-gate, completeness-via-grep. Handover amended (§2.5 + §6 + phase bodies), committed.
+- **Phase 1 scaffolded** on `cli/ygg2-taxonomy-authority` (stubs + skipped contract test). NOT implemented — Marco implements later.
+- Superadmin mode (founder-doc authoring direct); all edits on `dev/ygg2-taxonomy-authority-doc` feature branch → staging.
+
+### What changed this session
+| Layer | State |
+|---|---|
+| Handover doc | ✅ ratified, committed `2be9d9154`, fully amended with closeout strategy + 8-scout miss-list |
+| Phase 1 scaffold | ✅ pushed `cli/ygg2-taxonomy-authority` @ `dd5069d1f` (stubs only, contract test skip'd) |
+| Blast-radius sweep | ✅ 8 scouts complete, reconciled, false-positive caught |
+| Worktree cleanup | ✅ scaffold worktree removed + pruned |
+| Phase 1 implementation | ⏳ deferred — Marco implements later |
+| Tracking issues (prose cleanup, samples/experiments exclusion) | ⏳ not yet filed |
+
+### Branches at end of session
+| Branch | Head SHA | Status |
+|---|---|---|
+| `dev/ygg2-taxonomy-authority-doc` | `2be9d9154` | pushed; carries ratified+amended handover; no PR opened yet |
+| `cli/ygg2-taxonomy-authority` | `dd5069d1f` | pushed; Phase 1 scaffold (stubs); no PR |
+| `dev/yggdrasil-ii-staging` | (integration) | target for all ygg2 feature branches; PR #1185 DRAFT → main |
+
+### Issues + PRs touched
+- EPIC #1002 (Ygg II) governs; PR #1185 = staging→main aggregate (DRAFT).
+- PR #1227 (frontend fix-forward) FROZEN by Marco — Phase 3 rewinds it (SHA list snapshotted in handover §3).
+- To file next session: (a) banned-word prose cleanup `docs/en/*`+samples; (b) sample/experiment grep-guard exclusion. Both link #1002.
+
+### Routing — where things live now
+- Authority module target: `src/gaia_cli/taxonomy.py` (scaffolded). Emission home: named index (`registry/named-skills.json` → `docs/graph/named/index.json`).
+- Full miss-list + scope line + guardrails: handover §2.5, §4, §6.
+
+### Lessons / hazards preserved
+- **tree.md collapse trap:** discarding D14 (04d6114d6) without repointing `generateProjections.py`/`_tree_renderer.py` collapses `docs/tree.md` + every per-user `skill-tree.md` to Basics-only (fallback matches dead `type=="ultimate"` = zero Ygg II nodes). HIGH; now in Phase 3.
+- **Ground-truth beats scout self-report:** scout #7 flagged leaderboard.js as a resolver; a 5-second read proved it delegates to `GaiaSemantics.computeBranch` (correct target pattern). Always verify a contradiction between scouts before acting.
+- **Completeness via grep, not checklist:** 8 derivers missed because hand inventories aren't exhaustive. Phase 1 parity oracle + §4 grep guard are the enforcement; §6 is a snapshot, not a maintenance list.
+- **Additive-wire contract:** gaia-mcp fail-closes every fetch if `type`/`contractVersion` move; gaia-research breaks on field renames. Never remove/rename in Phase 2.
+- **CLI wheel trap:** patch releases don't refresh the bundled snapshot → new code + stale snapshot renders blank. Mitigated by `taxonomy.py` absent-field fallback + co-release-in-one-minor.
+
+### Open questions for next orchestrator / quick handoff for next session
+- **Next session picks up:** Phase 1 IMPLEMENTATION (Marco implements later) — port resolver #1+#3 logic into the `taxonomy.py` stubs, write the real parity contract test (JS harness, no hand-transcribe), flip skip → RED → green. Branch fresh off `cli/ygg2-taxonomy-authority`.
+- **Hard dependencies to carry forward:** #1227 is FROZEN — do not let it accrue commits or the Phase 3 SHA list drifts. Handover §3 has the exact cherry-pick/discard SHAs.
+- Decide whether the doc branch opens its own PR into staging now or rides along with Phase 1's PR.
+- File the two tracking issues before Phase 3.
+
+### Token cost (this session)
+- 2026-07-18 Opus 4.8 (orchestrator + 8 scouts, brainstorming + full session): ~11 euros. Overwhelmingly orchestrator + scout dispatch; no worker implementation this session.
+
+---
+
 ## State Snapshot (2026-07-16, session — Structured migration provenance + #999 guards + user-tree drift fix; 3 PRs MERGED to staging; next session = DESIGN)
 
 ### TLDR

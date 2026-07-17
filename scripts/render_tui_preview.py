@@ -77,10 +77,10 @@ def render_token_table() -> str:
 
     rows.append("<tbody><tr><th colspan=4>Tiers</th></tr>")
     for label, value, role in [
-        ("TIER_BASIC",    T.TIER_BASIC,    "○ Basic Skill"),
-        ("TIER_EXTRA",    T.TIER_EXTRA,    "◇ Extra Skill"),
-        ("TIER_UNIQUE",   T.TIER_UNIQUE,   "◉ Unique Skill"),
-        ("TIER_ULTIMATE", T.TIER_ULTIMATE, "◆ Ultimate Skill"),
+        ("TIER_BASIC",    T.TIER_BASIC,    "○ Basic"),
+        ("TIER_EXTRA",    T.TIER_EXTRA,    "◇ Fusion (legacy: Extra)"),
+        ("TIER_UNIQUE",   T.TIER_UNIQUE,   "◉ Unique branch"),
+        ("TIER_ULTIMATE", T.TIER_ULTIMATE, "◆ Suite 5★+ / Apex"),
     ]:
         rows.append(_swatch_row(label, value, role))
     rows.append("</tbody>")
@@ -91,9 +91,9 @@ def render_token_table() -> str:
         ("RANK_AWAKENED",          T.RANK_AWAKENED,          "1★ Awakened — sky blue"),
         ("RANK_NAMED",             T.RANK_NAMED,             "2★ Named — teal"),
         ("RANK_EVOLVED",           T.RANK_EVOLVED,           "3★ Evolved — violet"),
-        ("RANK_HARDENED",          T.RANK_HARDENED,          "4★ Hardened — fuchsia"),
-        ("RANK_TRANSCENDENT",      T.RANK_TRANSCENDENT,      "5★ Transcendent — amber"),
-        ("RANK_TRANSCENDENT_APEX", T.RANK_TRANSCENDENT_APEX, "6★ Transcendent ★ — amber (bright)"),
+        ("RANK_HARDENED",          T.RANK_HARDENED,          "4★ Extra (Suite) / Unique (Unique branch) — fuchsia"),
+        ("RANK_TRANSCENDENT",      T.RANK_TRANSCENDENT,      "5★ Ultimate (Suite) / Unique Ultimate (Unique branch) — amber"),
+        ("RANK_TRANSCENDENT_APEX", T.RANK_TRANSCENDENT_APEX, "6★ Apex (Suite) / Unique Impossible (Unique branch) — amber (bright)"),
     ]:
         rows.append(_swatch_row(label, value, role))
     rows.append("</tbody>")

@@ -20,7 +20,7 @@ if _SCRIPTS_DIR not in sys.path:
 
 # Legend emitted only in canonical mode.
 _LEGEND = (
-    "◆ Ultimate · ◉ Unique · ◇ Extra · ○ Basic"
+    "◇ Fusion · ○ Basic"
     "   ·   [N★] = top named-variant stars (blank = no named implementation yet)"
     " · (↑ see above) = shared prerequisite"
 )
@@ -47,7 +47,7 @@ def _get_tier_label(meta: dict, level) -> str:
 
 
 def _get_tier_symbol(skill_type: str) -> str:
-    return {"basic": "○", "extra": "◇", "unique": "◉", "ultimate": "◆"}.get(
+    return {"basic": "○", "fusion": "◇"}.get(
         skill_type, "·"
     )
 
@@ -155,14 +155,14 @@ def render_tree(
         return []
 
     def _sorted_ults(sks):
-        # Generic refs are rank-less — order ultimates by top named-variant star
-        # (descending), then name. Unclaimed ultimates sort last.
+        # Generic refs are rank-less — order fusions by top named-variant star
+        # (descending), then name. Unclaimed fusions sort last.
         def _key(s):
             star = named_level_map.get(s.get("id"))
             rank = _LEVEL_ORDER.index(star) if star in _LEVEL_ORDER else -1
             return (-rank, s.get("name", ""))
         return sorted(
-            [s for s in sks if s.get("type") == "ultimate"],
+            [s for s in sks if s.get("type") == "fusion"],
             key=_key,
         )
 
@@ -178,12 +178,12 @@ def render_tree(
         for pid in s.get("prerequisites", []):
             all_prereq_ids.add(pid)
 
-    # ── Filter sub-Ultimates ──────────────────────────────────────────────
-    # An Ultimate that appears as a direct or transitive prerequisite of
-    # another Ultimate is already rendered nested inside that parent tree.
+    # ── Filter sub-Fusions ────────────────────────────────────────────────
+    # A Fusion that appears as a direct or transitive prerequisite of
+    # another Fusion is already rendered nested inside that parent tree.
     # Listing it again at the top level is redundant, so we exclude it.
     def _sub_ultimate_ids(all_skills: list, smap: dict) -> set:
-        ultimate_ids = {s["id"] for s in all_skills if s.get("type") == "ultimate"}
+        fusion_ids = {s["id"] for s in all_skills if s.get("type") == "fusion"}
         sub: set = set()
 
         def _walk(sid: str, visiting: set) -> None:
@@ -194,11 +194,11 @@ def render_tree(
             if not sk:
                 return
             for pid in sk.get("prerequisites", []):
-                if pid in ultimate_ids:
+                if pid in fusion_ids:
                     sub.add(pid)
                 _walk(pid, visiting)
 
-        for uid in ultimate_ids:
+        for uid in fusion_ids:
             _walk(uid, set())
         return sub
 
@@ -206,10 +206,10 @@ def render_tree(
     top_level_skills = [s for s in skills if s["id"] not in _sub_ids]
 
     legendaries = _srt(top_level_skills)
-    unique_skills = sorted(
-        [s for s in skills if s.get("type") == "unique"],
-        key=lambda s: s.get("id", ""),
-    )
+    # Under Yggdrasil II type=unique is retired; unique is a branch, not a type.
+    # This list will be empty for any post-migration registry (all fusions are
+    # type=fusion, all isolated nodes are type=basic).
+    unique_skills: list = []
     basic_orphans = sorted(
         [
             s
@@ -250,14 +250,14 @@ def render_tree(
         lines.append(_SEP70)
         lines.append("")
 
-    # ── Ultimates (upgrade paths) ─────────────────────────────────────────
+    # ── Fusions (upgrade paths) ───────────────────────────────────────────
     for legendary in legendaries:
         lid = legendary.get("id")
         prereq_ids = legendary.get("prerequisites", [])
-        display = _bsd(lid, "ultimate", named_map, handle_rel,
+        display = _bsd(lid, "fusion", named_map, handle_rel,
                        named_level_map=named_level_map, named_entry_level=named_entry_level)
 
-        # Unclaimed ultimates: no named implementation yet → no star
+        # Unclaimed fusions: no named implementation yet → no star
         is_unclaimed = not (named_map or {}).get(lid)
         star_pill = _star_pill(named_level_map, lid)
 
@@ -267,9 +267,9 @@ def render_tree(
             check = ""
 
         if is_unclaimed:
-            lines.append(f"{check}◆ {display}  [Unclaimed]")
+            lines.append(f"{check}◇ {display}  [Unclaimed]")
         else:
-            lines.append(f"{check}◆ {display}{star_pill}")
+            lines.append(f"{check}◇ {display}{star_pill}")
         if not is_user:
             lines.append(_SEP65)
 

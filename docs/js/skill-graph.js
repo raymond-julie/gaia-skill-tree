@@ -40,6 +40,9 @@
   const NODE_RADII = {
     ultimate: 12.5, unique: 9.5, extra: 6.9, basic: 3.5,  // legacy type-keyed
     get: function (rank, type) {
+      // §Ygg-II: 'unique' branch (basic≥4★, no suiteComponents) gets a boosted
+      // radius anchor equivalent to 5★. type is now 'basic'|'fusion' only, so
+      // callers pass the precomputed branch string when needed.
       if (type === 'unique') rank = 5;
       // Accept an int effective rank directly, else parse a leading "N★" int.
       const n = (typeof rank === 'number' && Number.isFinite(rank))
@@ -405,12 +408,21 @@
     const satellite = { unique: [], orphan: [] };
     const allPrereqRefs = new Set();
     skills.forEach(skill => skill.prerequisites.forEach(pid => allPrereqRefs.add(pid)));
+    // §Ygg-II: type enum is now basic|fusion only. Derive the display branch via
+    // GaiaSemantics.computeBranch(skill, effectiveRank) so unique/suite
+    // satellite classification works correctly again.
+    const _computeBranch = (window.GaiaSemantics && window.GaiaSemantics.computeBranch)
+      ? window.GaiaSemantics.computeBranch
+      : function (sk) { return sk.type === 'fusion' ? 'suite' : 'standard'; };
     skills.forEach(skill => {
-      if (skill.type === 'unique') { satellite.unique.push(skill); }
+      const branch = _computeBranch(skill, skill.effectiveRank || skill.level);
+      if (branch === 'unique') { satellite.unique.push(skill); }
       else if (skill.type === 'basic' && !skill.prerequisites.length && !allPrereqRefs.has(skill.id)) {
         satellite.orphan.push(skill);
       } else {
-        (groups[skill.type] || groups.basic).push(skill);
+        // Map branch → legacy group bucket: suite→ultimate, standard basic→basic, fusion→extra
+        const groupKey = branch === 'suite' ? 'ultimate' : (skill.type === 'fusion' ? 'extra' : 'basic');
+        (groups[groupKey] || groups.basic).push(skill);
       }
     });
     Object.values(groups).forEach(group => group.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id)));
@@ -733,7 +745,10 @@
       _refreshSearchDatalist();
       if (state.statusEl) {
         const edgeCount = skills.reduce((sum, skill) => sum + skill.prerequisites.length, 0);
-        const uniqueCount = skills.filter(s => s.type === 'unique').length;
+        // §Ygg-II: derive branch via GaiaSemantics instead of checking type === 'unique'
+        const _cb = (window.GaiaSemantics && window.GaiaSemantics.computeBranch)
+          ? window.GaiaSemantics.computeBranch : function (sk) { return 'standard'; };
+        const uniqueCount = skills.filter(s => _cb(s, s.effectiveRank || s.level) === 'unique').length;
         const mb = (fill) => `<svg class="gst-icon" viewBox="0 0 10 15" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"><rect x=".7" y=".7" width="8.6" height="13.6" rx="4.3"/><path d="M5 .7v5.8" stroke-width="1"/><path d="M.7 6.5h8.6" stroke-width="1"/>${fill}</svg>`;
         const iL = mb('<rect x=".7" y=".7" width="4.3" height="5.8" rx="2" stroke="none" fill="currentColor" opacity=".55"/>');
         const iM = mb('<rect x="3.4" y="1.4" width="3.2" height="4.2" rx="1.6" stroke="none" fill="currentColor" opacity=".55"/>');
@@ -1102,8 +1117,11 @@
       if (state.redPillActive && state.namedMap[skill.id]) return true;
       if (state.labelMode === 'none') return false;
       if (state.labelMode === 'all') return true;
+      // §Ygg-II: type is now basic|fusion — derive branch for modal/priority label logic.
+      const _cb = window.GaiaSemantics && window.GaiaSemantics.computeBranch;
+      const branch = _cb ? _cb(skill, skill.effectiveRank || skill.level) : 'standard';
       if (state.labelMode === 'modal') return skill.type !== 'basic' || stableHash(skill.id) % 7 === 0;
-      return skill.type === 'ultimate' || skill.type === 'unique';
+      return branch === 'suite' || branch === 'unique';
     }
 
     function _canonicalSkillColor(skill) {
@@ -1295,16 +1313,30 @@
       }
       const legendHovering = Boolean(state.legendHoverType || state.legendHoverRank);
       const legendFiltering = Boolean(state.legendFilterType || state.legendFilterRank);
+      // §Ygg-II: type enum is now basic|fusion only. Map legend data-legend-type values
+      // (basic/extra/unique/ultimate) to computed branch so filters match real skills.
+      // Legend "unique" → branch 'unique', "extra"/"ultimate" → branch 'suite',
+      // "basic" → branch 'standard'.
+      const _branchFn = window.GaiaSemantics && window.GaiaSemantics.computeBranch;
+      function _legendTypeMatches(skill, legendType) {
+        if (!legendType) return true;
+        if (!_branchFn) return skill.type === legendType; // graceful degradation
+        const branch = _branchFn(skill, skill.effectiveRank || skill.level);
+        if (legendType === 'unique') return branch === 'unique';
+        if (legendType === 'ultimate' || legendType === 'extra') return branch === 'suite';
+        // 'basic' → standard branch (non-unique, non-suite)
+        return branch === 'standard';
+      }
       state.skills.forEach(skill => {
         let targetVis;
         if (hovering) {
           targetVis = skill.id === focusId ? 1.0 : neighborSet.has(skill.id) ? 0.88 : 0.12;
         } else if (legendHovering) {
-          const mt = !state.legendHoverType || skill.type === state.legendHoverType;
+          const mt = _legendTypeMatches(skill, state.legendHoverType);
           const mr = !state.legendHoverRank || skill.level === state.legendHoverRank;
           targetVis = (mt && mr) ? 1.0 : 0.12;
         } else if (legendFiltering) {
-          const mt = !state.legendFilterType || skill.type === state.legendFilterType;
+          const mt = _legendTypeMatches(skill, state.legendFilterType);
           const mr = !state.legendFilterRank || skill.level === state.legendFilterRank;
           const matchesLegend = mt && mr;
           if (isSearchActive) {
@@ -1575,9 +1607,13 @@
         const isHovered = state.hoveredId === skill.id;
         // §6 radius-by-rank: under the World Tree layout, size reads from the
         // joined effective rank; the legacy 3D graph keeps the level-glyph path.
+        // §Ygg-II: pass the computed branch so unique branch gets the rank-5 anchor.
+        const _nodeRankBranch = (window.GaiaSemantics && window.GaiaSemantics.computeBranch)
+          ? window.GaiaSemantics.computeBranch(skill, skill.effectiveRank || skill.level)
+          : skill.type;
         const baseR = state.treeLayout
-          ? NODE_RADII.get(skill.effectiveRank, skill.type)
-          : NODE_RADII.get(skill.level, skill.type);
+          ? NODE_RADII.get(skill.effectiveRank, _nodeRankBranch)
+          : NODE_RADII.get(skill.level, _nodeRankBranch);
         const pulse = 0.84 + 0.16 * Math.sin(state.t * 2.2 + p.phase);
 
         const specialMix = state.treeLayout ? easeWorldTree(state.viewMix) : 1;
@@ -1585,7 +1621,13 @@
         if (skill.level === '6★' && specialMix > 0) {
           if (specialMix < 1) drawNode(pr.sx, pr.sy, nodeRadius, { rgb: getCanvasTokens().apexGoldRgb }, depthAlpha * vis * (1 - specialMix));
           drawNodeVI(pr.sx, pr.sy, nodeRadius, depthAlpha * vis * specialMix, state.t, p);
-        } else if (skill.type === 'unique' && specialMix > 0) {
+        } else if (
+          // §Ygg-II: type is now basic|fusion only — derive unique branch instead.
+          (window.GaiaSemantics && window.GaiaSemantics.computeBranch
+            ? window.GaiaSemantics.computeBranch(skill, skill.effectiveRank || skill.level) === 'unique'
+            : false)
+          && specialMix > 0
+        ) {
           if (specialMix < 1) drawNode(pr.sx, pr.sy, nodeRadius, { rgb: getCanvasTokens().apexGoldRgb }, depthAlpha * vis * (1 - specialMix));
           drawNodeUnique(pr.sx, pr.sy, nodeRadius, depthAlpha * vis * specialMix, state.t, p);
         } else if (state.redPillActive && state.namedMap && state.namedMap[skill.id] && specialMix > 0.98) {
@@ -1617,9 +1659,13 @@
           : ((PALETTE[skill.type] || PALETTE.basic).rgb));
 
         // Registry-3d aesthetic: Use mono font at reduced size for non-highlighted labels
-        const size = highlighted ? (skill.type === 'ultimate' ? 13 : 10) : 9;
-        let role = (highlighted || isNamedHover || state.labelMode === 'all') 
-          ? (skill.type === 'ultimate' ? 'display' : 'handle') 
+        // §Ygg-II: suite branch (was 'ultimate') gets the display face.
+        const _skillBranchLabel = (window.GaiaSemantics && window.GaiaSemantics.computeBranch)
+          ? window.GaiaSemantics.computeBranch(skill, skill.effectiveRank || skill.level)
+          : 'standard';
+        const size = highlighted ? (_skillBranchLabel === 'suite' ? 13 : 10) : 9;
+        let role = (highlighted || isNamedHover || state.labelMode === 'all')
+          ? (_skillBranchLabel === 'suite' ? 'display' : 'handle')
           : 'handle';
 
         ctx.font = canvasFont(role, size * pr.scale * 1.16);
@@ -1701,7 +1747,11 @@
 
       // Final pass: redraw unique void cores on top of everything (labels, other effects)
       nodes.forEach(({ skill }) => {
-        if (skill.type !== 'unique') return;
+        // §Ygg-II: type is now basic|fusion — use computeBranch for unique detection.
+        const _uniqueBranch = (window.GaiaSemantics && window.GaiaSemantics.computeBranch)
+          ? window.GaiaSemantics.computeBranch(skill, skill.effectiveRank || skill.level) === 'unique'
+          : false;
+        if (!_uniqueBranch) return;
         const specialMix = state.treeLayout ? easeWorldTree(state.viewMix) : 1;
         if (specialMix <= 0) return;
         const p = xf[skill.id]; if (!p) return;
@@ -1732,12 +1782,16 @@
             // §6.1 hover card two channels under the World Tree layout: rank
             // (color) + structural class (glyph). glyph comes from the frozen
             // resolveSemantics contract (nodeMeta[id].glyph); fall back to a
-            // type→glyph map for the legacy 3D graph. Name color reads the rank
+            // branch→glyph map for the legacy 3D graph. Name color reads the rank
             // ramp under the tree so color = rank end-to-end.
             const _tlMeta = (state.treeLayout && state.treeLayout.nodeMeta
               && state.treeLayout.nodeMeta[skill.id]) || null;
-            const _glyphMap = { basic: '○', extra: '◇', ultimate: '◆', unique: '◉' };
-            const structGlyph = (_tlMeta && _tlMeta.glyph) || _glyphMap[skill.type] || '○';
+            // §Ygg-II: type is now basic|fusion — derive branch for glyph/label.
+            const _tooltipBranch = (window.GaiaSemantics && window.GaiaSemantics.computeBranch)
+              ? window.GaiaSemantics.computeBranch(skill, skill.effectiveRank || skill.level)
+              : (skill.type === 'fusion' ? 'suite' : 'standard');
+            const _branchGlyphMap = { standard: '○', suite: '◆', unique: '◉' };
+            const structGlyph = (_tlMeta && _tlMeta.glyph) || _branchGlyphMap[_tooltipBranch] || '○';
             const nameRgb = state.treeLayout ? _rankColorRgb(skill.effectiveRank) : col.rgb;
 
             state.tooltipEl.textContent = '';
@@ -1793,8 +1847,9 @@
             const badgeSpan = document.createElement('span');
             badgeSpan.className = `skill-tooltip-badge ${typeClass}`;
             // Lead with the structural-class glyph (§6 glyph channel), then the
-            // type label. Suite reads "SUITE", fusion covers extra/fusion.
-            const _typeLabel = { basic: 'BASIC', extra: 'FUSION', ultimate: 'SUITE', unique: 'UNIQUE' }[skill.type] || skill.type.toUpperCase();
+            // branch label. §Ygg-II: type is now basic|fusion — derive branch for label.
+            const _branchLabelMap = { standard: 'BASIC', suite: 'SUITE', unique: 'UNIQUE' };
+            const _typeLabel = _branchLabelMap[_tooltipBranch] || skill.type.toUpperCase();
             badgeSpan.textContent = structGlyph + ' ' + _typeLabel;
             rowDiv.appendChild(badgeSpan);
 

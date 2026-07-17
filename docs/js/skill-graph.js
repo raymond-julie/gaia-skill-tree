@@ -27,6 +27,53 @@
   // ╚════════════════════════════════════════════════════════════════╝
   const version = window.GAIA_VERSION ? '?v=' + window.GAIA_VERSION : '';
   const prefix = (typeof window.gaiaIconBase === 'function') ? window.gaiaIconBase().replace(/assets\/icons\.svg(\?.*)?$/, '') : '';
+
+  // ── Yggdrasil II read-time branch (rubric E1) ───────────────────────
+  // The canvas data (graph/gaia.json) carries type=basic|fusion + an
+  // effective rank (namedMaxLevel / level) but NOT suiteComponents. Branch is
+  // DERIVED, never read from a dead type==='unique'|'ultimate'|'extra' value.
+  // Delegates to the shared resolver (skill-semantics.js) when present, with a
+  // graph-data fallback that mirrors it: a fusion is a suite, a basic that
+  // reached 4★+ is unique, everything else is standard.
+  function effRankOf(skill) {
+    const v = (skill && (skill.effectiveRank != null ? skill.effectiveRank
+      : (skill.namedMaxLevel != null ? skill.namedMaxLevel : skill.level)));
+    if (v == null) return 0;
+    if (typeof v === 'number') return v | 0;
+    const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+    return isNaN(n) ? 0 : Math.max(0, Math.min(6, n));
+  }
+  function branchOf(skill) {
+    if (!skill) return 'standard';
+    const rank = effRankOf(skill);
+    if (window.GaiaSemantics && typeof window.GaiaSemantics.computeBranch === 'function') {
+      const b = window.GaiaSemantics.computeBranch(skill, rank);
+      if (b && b !== 'standard') return b;
+      // GaiaSemantics can't see suiteComponents in graph data — a fusion with
+      // no components still reads suite here.
+      if (skill.type === 'fusion') return 'suite';
+      return b || 'standard';
+    }
+    // Standalone fallback (semantics not loaded).
+    if (Array.isArray(skill.suiteComponents) && skill.suiteComponents.length) return 'suite';
+    if (skill.type === 'fusion') return 'suite';
+    if (skill.type === 'basic' && rank >= 4) return 'unique';
+    return 'standard';
+  }
+  // Map a skill to the legend's filter token. The legend exposes four buckets
+  // keyed on the LEGACY data-legend-type strings (basic|extra|unique|ultimate)
+  // labelled Basic/Fusion/Unique/Suite. Derive the bucket from the branch +
+  // type so the filter matches real data (rubric E1) rather than a dead enum:
+  //   unique branch          → 'unique'
+  //   suite branch, 5★+      → 'ultimate' (Suite label)
+  //   suite branch / fusion  → 'extra'    (Fusion label)
+  //   standard basic         → 'basic'
+  function legendCategory(skill) {
+    const b = branchOf(skill);
+    if (b === 'unique') return 'unique';
+    if (b === 'suite') return effRankOf(skill) >= 5 ? 'ultimate' : 'extra';
+    return skill && skill.type === 'fusion' ? 'extra' : 'basic';
+  }
   const GRAPH_JSON_URL = prefix + 'graph/gaia.json' + version;
   const GRAPH_SCALE = 1.625;
 
@@ -39,8 +86,10 @@
   // and any host still reading them; new call sites pass effectiveRank.
   const NODE_RADII = {
     ultimate: 12.5, unique: 9.5, extra: 6.9, basic: 3.5,  // legacy type-keyed
-    get: function (rank, type) {
-      if (type === 'unique') rank = 5;
+    get: function (rank, branch) {
+      // Rubric E1: keyed on the DERIVED branch, not a dead type enum. A unique
+      // draws at the 5★ radius curve so mastery-fork nodes read as elite.
+      if (branch === 'unique') rank = 5;
       // Accept an int effective rank directly, else parse a leading "N★" int.
       const n = (typeof rank === 'number' && Number.isFinite(rank))
         ? Math.max(0, Math.round(rank))
@@ -272,6 +321,7 @@
       prerequisites: Array.isArray(skill.prerequisites) ? skill.prerequisites : [],
       cluster: skill.cluster !== undefined ? skill.cluster : 0,
       positions: skill.positions || null,
+      suiteComponents: Array.isArray(skill.suiteComponents) ? skill.suiteComponents : undefined,
     })).filter(skill => skill.id);
   }
 
@@ -406,11 +456,11 @@
     const allPrereqRefs = new Set();
     skills.forEach(skill => skill.prerequisites.forEach(pid => allPrereqRefs.add(pid)));
     skills.forEach(skill => {
-      if (skill.type === 'unique') { satellite.unique.push(skill); }
+      if (branchOf(skill) === 'unique') { satellite.unique.push(skill); }
       else if (skill.type === 'basic' && !skill.prerequisites.length && !allPrereqRefs.has(skill.id)) {
         satellite.orphan.push(skill);
       } else {
-        (groups[skill.type] || groups.basic).push(skill);
+        (groups[legendCategory(skill)] || groups.basic).push(skill);
       }
     });
     Object.values(groups).forEach(group => group.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id)));
@@ -709,7 +759,7 @@
       }).filter(Boolean);
       if (!state.treeEdges.length) {
         state.skills.forEach(skill => skill.prerequisites.forEach(parent => {
-          if (byId[parent]) state.treeEdges.push({ from: parent, to: skill.id, type: skill.type });
+          if (byId[parent]) state.treeEdges.push({ from: parent, to: skill.id, type: legendCategory(skill) });
         }));
       }
 
@@ -733,7 +783,7 @@
       _refreshSearchDatalist();
       if (state.statusEl) {
         const edgeCount = skills.reduce((sum, skill) => sum + skill.prerequisites.length, 0);
-        const uniqueCount = skills.filter(s => s.type === 'unique').length;
+        const uniqueCount = skills.filter(s => branchOf(s) === 'unique').length;
         const mb = (fill) => `<svg class="gst-icon" viewBox="0 0 10 15" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"><rect x=".7" y=".7" width="8.6" height="13.6" rx="4.3"/><path d="M5 .7v5.8" stroke-width="1"/><path d="M.7 6.5h8.6" stroke-width="1"/>${fill}</svg>`;
         const iL = mb('<rect x=".7" y=".7" width="4.3" height="5.8" rx="2" stroke="none" fill="currentColor" opacity=".55"/>');
         const iM = mb('<rect x="3.4" y="1.4" width="3.2" height="4.2" rx="1.6" stroke="none" fill="currentColor" opacity=".55"/>');
@@ -1103,7 +1153,7 @@
       if (state.labelMode === 'none') return false;
       if (state.labelMode === 'all') return true;
       if (state.labelMode === 'modal') return skill.type !== 'basic' || stableHash(skill.id) % 7 === 0;
-      return skill.type === 'ultimate' || skill.type === 'unique';
+      return branchOf(skill) === 'suite' || branchOf(skill) === 'unique';
     }
 
     function _canonicalSkillColor(skill) {
@@ -1112,12 +1162,13 @@
         const rgb = rgbFromHex(hex);
         if (rgb) return { rgb, hex };
       }
-      const metaColor = state.meta && state.meta.typeColors && state.meta.typeColors[skill.type];
+      const pkey = legendCategory(skill);
+      const metaColor = state.meta && state.meta.typeColors && state.meta.typeColors[pkey];
       if (metaColor) {
         const rgb = metaColor.rgb || rgbFromHex(metaColor.hex);
         if (rgb) return { rgb: _rgbOnly(String(rgb)), hex: metaColor.hex || '' };
       }
-      return PALETTE[skill.type] || PALETTE.basic;
+      return PALETTE[pkey] || PALETTE.basic;
     }
 
     function _displaySkillColor(skill) {
@@ -1300,11 +1351,11 @@
         if (hovering) {
           targetVis = skill.id === focusId ? 1.0 : neighborSet.has(skill.id) ? 0.88 : 0.12;
         } else if (legendHovering) {
-          const mt = !state.legendHoverType || skill.type === state.legendHoverType;
+          const mt = !state.legendHoverType || legendCategory(skill) === state.legendHoverType;
           const mr = !state.legendHoverRank || skill.level === state.legendHoverRank;
           targetVis = (mt && mr) ? 1.0 : 0.12;
         } else if (legendFiltering) {
-          const mt = !state.legendFilterType || skill.type === state.legendFilterType;
+          const mt = !state.legendFilterType || legendCategory(skill) === state.legendFilterType;
           const mr = !state.legendFilterRank || skill.level === state.legendFilterRank;
           const matchesLegend = mt && mr;
           if (isSearchActive) {
@@ -1376,7 +1427,7 @@
           if (!xf[skill.id]) return;
           skill.prerequisites.forEach(pid => {
             if (!xf[pid]) return;
-            edges.push({ from: pid, to: skill.id, type: skill.type, avgZ: (xf[skill.id].z + xf[pid].z) / 2 });
+            edges.push({ from: pid, to: skill.id, type: legendCategory(skill), avgZ: (xf[skill.id].z + xf[pid].z) / 2 });
           });
         });
       }
@@ -1576,8 +1627,8 @@
         // §6 radius-by-rank: under the World Tree layout, size reads from the
         // joined effective rank; the legacy 3D graph keeps the level-glyph path.
         const baseR = state.treeLayout
-          ? NODE_RADII.get(skill.effectiveRank, skill.type)
-          : NODE_RADII.get(skill.level, skill.type);
+          ? NODE_RADII.get(skill.effectiveRank, branchOf(skill))
+          : NODE_RADII.get(skill.level, branchOf(skill));
         const pulse = 0.84 + 0.16 * Math.sin(state.t * 2.2 + p.phase);
 
         const specialMix = state.treeLayout ? easeWorldTree(state.viewMix) : 1;
@@ -1585,7 +1636,7 @@
         if (skill.level === '6★' && specialMix > 0) {
           if (specialMix < 1) drawNode(pr.sx, pr.sy, nodeRadius, { rgb: getCanvasTokens().apexGoldRgb }, depthAlpha * vis * (1 - specialMix));
           drawNodeVI(pr.sx, pr.sy, nodeRadius, depthAlpha * vis * specialMix, state.t, p);
-        } else if (skill.type === 'unique' && specialMix > 0) {
+        } else if (branchOf(skill) === 'unique' && specialMix > 0) {
           if (specialMix < 1) drawNode(pr.sx, pr.sy, nodeRadius, { rgb: getCanvasTokens().apexGoldRgb }, depthAlpha * vis * (1 - specialMix));
           drawNodeUnique(pr.sx, pr.sy, nodeRadius, depthAlpha * vis * specialMix, state.t, p);
         } else if (state.redPillActive && state.namedMap && state.namedMap[skill.id] && specialMix > 0.98) {
@@ -1614,12 +1665,13 @@
         const tokens = getCanvasTokens();
         const colRgb = forcedColRgb || (isNamedHover
           ? tokens.honorRedRgb
-          : ((PALETTE[skill.type] || PALETTE.basic).rgb));
+          : ((PALETTE[legendCategory(skill)] || PALETTE.basic).rgb));
 
         // Registry-3d aesthetic: Use mono font at reduced size for non-highlighted labels
-        const size = highlighted ? (skill.type === 'ultimate' ? 13 : 10) : 9;
-        let role = (highlighted || isNamedHover || state.labelMode === 'all') 
-          ? (skill.type === 'ultimate' ? 'display' : 'handle') 
+        const isApexLabel = legendCategory(skill) === 'ultimate';
+        const size = highlighted ? (isApexLabel ? 13 : 10) : 9;
+        let role = (highlighted || isNamedHover || state.labelMode === 'all')
+          ? (isApexLabel ? 'display' : 'handle')
           : 'handle';
 
         ctx.font = canvasFont(role, size * pr.scale * 1.16);
@@ -1701,7 +1753,7 @@
 
       // Final pass: redraw unique void cores on top of everything (labels, other effects)
       nodes.forEach(({ skill }) => {
-        if (skill.type !== 'unique') return;
+        if (branchOf(skill) !== 'unique') return;
         const specialMix = state.treeLayout ? easeWorldTree(state.viewMix) : 1;
         if (specialMix <= 0) return;
         const p = xf[skill.id]; if (!p) return;
@@ -1726,8 +1778,9 @@
         if (displayId && pr) {
           if (displayId !== state.lastHoveredId) {
             const skill = state.skills.find(s => s.id === displayId);
-            const col = PALETTE[skill.type] || PALETTE.basic;
-            const typeClass = `skill-tooltip-type-${skill.type}`;
+            const pkey = legendCategory(skill);
+            const col = PALETTE[pkey] || PALETTE.basic;
+            const typeClass = `skill-tooltip-type-${pkey}`;
             const rm = skill.level ? RANK_META[skill.level] : null;
             // §6.1 hover card two channels under the World Tree layout: rank
             // (color) + structural class (glyph). glyph comes from the frozen
@@ -1737,7 +1790,7 @@
             const _tlMeta = (state.treeLayout && state.treeLayout.nodeMeta
               && state.treeLayout.nodeMeta[skill.id]) || null;
             const _glyphMap = { basic: '○', extra: '◇', ultimate: '◆', unique: '◉' };
-            const structGlyph = (_tlMeta && _tlMeta.glyph) || _glyphMap[skill.type] || '○';
+            const structGlyph = (_tlMeta && _tlMeta.glyph) || _glyphMap[legendCategory(skill)] || '○';
             const nameRgb = state.treeLayout ? _rankColorRgb(skill.effectiveRank) : col.rgb;
 
             state.tooltipEl.textContent = '';
@@ -1794,7 +1847,7 @@
             badgeSpan.className = `skill-tooltip-badge ${typeClass}`;
             // Lead with the structural-class glyph (§6 glyph channel), then the
             // type label. Suite reads "SUITE", fusion covers extra/fusion.
-            const _typeLabel = { basic: 'BASIC', extra: 'FUSION', ultimate: 'SUITE', unique: 'UNIQUE' }[skill.type] || skill.type.toUpperCase();
+            const _typeLabel = { basic: 'BASIC', extra: 'FUSION', ultimate: 'SUITE', unique: 'UNIQUE' }[legendCategory(skill)] || 'BASIC';
             badgeSpan.textContent = structGlyph + ' ' + _typeLabel;
             rowDiv.appendChild(badgeSpan);
 
@@ -1884,11 +1937,11 @@
             neighbors.forEach(nid => {
               const ns = state.skills.find(s => s.id === nid);
               if (!ns) return;
-              const col = PALETTE[ns.type] || PALETTE.basic;
+              const col = PALETTE[legendCategory(ns)] || PALETTE.basic;
               const card = document.createElement('div');
               card.className = 'graph-neighbor-card';
               card.dataset.nid = nid;
-              card.dataset.type = ns.type || 'basic';
+              card.dataset.type = legendCategory(ns);
               
               const span = document.createElement('span');
               span.style.color = `rgba(${col.rgb},.9)`;
@@ -2100,7 +2153,7 @@
         // (share / remove) sit in the top-right corner of the card.
         state.collection.forEach(id => {
           const skill = state.skills.find(s => s.id === id) || { id, name: id, type: 'basic' };
-          const col = PALETTE[skill.type] || PALETTE.basic;
+          const col = PALETTE[legendCategory(skill)] || PALETTE.basic;
           const namedId = (state.namedMap && state.namedMap[id]) || null;
           const cmd = namedId ? `gaia install ${namedId}` : `gaia propose /${id}`;
           const shareLink = namedId
@@ -2119,7 +2172,7 @@
             }
           }
           html +=
-            `<div class="plaque--mini graph-collection-card" data-cid="${esc(id)}" data-tier="${esc(skill.type)}"${ghostAttr}>` +
+            `<div class="plaque--mini graph-collection-card" data-cid="${esc(id)}" data-tier="${esc(legendCategory(skill))}"${ghostAttr}>` +
             `<div class="graph-collection-card-top">` +
             `<span class="graph-collection-card-name" style="color:rgba(${col.rgb},1)">${esc(skill.name)}</span>` +
             `<div class="graph-collection-card-btns">${shareLink}` +
@@ -2174,7 +2227,7 @@
 
       function openSkillPanel(skillId) {
         const skill = state.skills.find(s => s.id === skillId) || { id: skillId, name: skillId, type: 'basic', prerequisites: [] };
-        const col = PALETTE[skill.type] || PALETTE.basic;
+        const col = PALETTE[legendCategory(skill)] || PALETTE.basic;
         const namedId = (state.namedMap && state.namedMap[skill.id]) || null;
         const titleText = (state.titleMap && state.titleMap[skill.id]) || null;
         const rm = skill.level ? RANK_META[skill.level] : null;
@@ -2196,7 +2249,9 @@
         }
         if (namedId && titleText) c += `<div class="graph-skill-panel-title">"${esc(titleText)}"</div>`;
         c += `<div class="graph-skill-panel-type-row">`;
-        c += `<span class="skill-tooltip-badge skill-tooltip-type-${esc(skill.type)}">${esc(skill.type.toUpperCase())}</span>`;
+        const _panelCat = legendCategory(skill);
+        const _panelLabel = { basic: 'BASIC', extra: 'FUSION', ultimate: 'SUITE', unique: 'UNIQUE' }[_panelCat] || 'BASIC';
+        c += `<span class="skill-tooltip-badge skill-tooltip-type-${esc(_panelCat)}">${esc(_panelLabel)}</span>`;
         if (rm) c += `<span style="display:inline-block;padding:.12rem .42rem;border-radius:999px;font-size:.62rem;font-weight:700;background:${rm.bg};color:${rm.hex}">${esc(skill.level)}</span>`;
         c += `</div>`;
         c += `<div class="graph-skill-panel-terminal">`;

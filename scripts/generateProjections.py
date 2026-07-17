@@ -109,6 +109,62 @@ def get_tier_symbol(skill_type):
     return {"basic": "○", "extra": "◇", "unique": "◉", "ultimate": "◆"}.get(skill_type, "·")
 
 
+# ── Yggdrasil II read-time branch (rubric E1) ──────────────────────────────
+# The projection data (registry/gaia.json) carries type=basic|fusion plus an
+# effective star (namedMaxLevel). Branch is DERIVED topologically — NEVER read
+# from a dead type=='unique'|'ultimate'|'extra' value, and NEVER via the strict
+# trustMagnitude.computeBranch (which maps a fusion-without-suiteComponents at
+# 4★+ to 'unique' — the greedy misclassification the design reset escaped).
+# Mirror the proven docs/js/skill-graph.js branchOf/legendCategory contract:
+#   fusion (or carries suiteComponents)  -> suite
+#   basic that reached 4★+               -> unique (mastery-fork, no fusion path)
+#   else                                 -> standard
+_STAR_ORDER = ["1★", "2★", "3★", "4★", "5★", "6★"]
+
+
+def _eff_rank_int(skill, named_level_map=None):
+    """Effective star as an int 0-6: namedMaxLevel first, then level."""
+    v = skill.get("namedMaxLevel")
+    if v is None and named_level_map is not None:
+        v = named_level_map.get(skill.get("id"))
+    if v is None:
+        v = skill.get("level")
+    if v is None:
+        return 0
+    if isinstance(v, int):
+        return max(0, min(6, v))
+    digits = "".join(c for c in str(v) if c.isdigit())
+    return max(0, min(6, int(digits))) if digits else 0
+
+
+def branch_of(skill, named_level_map=None):
+    """Topological branch: 'suite' | 'unique' | 'standard'."""
+    if not skill:
+        return "standard"
+    comps = skill.get("suiteComponents")
+    if isinstance(comps, list) and comps:
+        return "suite"
+    if skill.get("type") == "fusion":
+        return "suite"
+    if skill.get("type") == "basic" and _eff_rank_int(skill, named_level_map) >= 4:
+        return "unique"
+    return "standard"
+
+
+def _tree_category(skill, named_level_map=None):
+    """Map to the four legacy tree buckets: basic | extra | unique | ultimate.
+
+    A suite at 5★+ reads Ultimate (◆); a suite at 4★/rank-less reads Extra (◇);
+    a unique reads Unique (◉); everything else is Basic (○).
+    """
+    b = branch_of(skill, named_level_map)
+    if b == "unique":
+        return "unique"
+    if b == "suite":
+        return "ultimate" if _eff_rank_int(skill, named_level_map) >= 5 else "extra"
+    return "basic"
+
+
 def _link_named_id(named_id, handle_rel=None):
     """Wrap the contributor segment of ``handle/skill`` in a markdown link.
 
@@ -165,12 +221,30 @@ def _build_skill_display(skill_id, skill_type, named_map=None, handle_rel=None,
         return named_id_display if named_id else f"/{skill_id}"
     return named_id_display if named_id else f"/{skill_id}"
 
-def _sorted_ultimates(skills):
-    # Receives only top-level Ultimates (sub-components already filtered by
-    # render_tree). Sort by name so the canonical tree is deterministic.
+def _fusion_weight(skill):
+    """'Biggest fusion' weight — how much a suite aggregates. Prefer explicit
+    suiteComponents count; fall back to prerequisite count for suites that
+    encode their tree via prereqs (the current Ygg II fusion shape)."""
+    comps = skill.get("suiteComponents")
+    if isinstance(comps, list) and comps:
+        return len(comps)
+    return len(skill.get("prerequisites", []) or [])
+
+
+def _sorted_ultimates(skills, named_level_map=None):
+    # Receives only top-level suites (sub-components already filtered by
+    # render_tree). D14: sort BIGGEST FUSIONS FIRST — descending effective
+    # rank, then descending fusion weight (component/prereq breadth), then name
+    # for determinism. Selection is topological (branch=='suite'), not a dead
+    # type=='ultimate' read.
+    suites = [s for s in skills if branch_of(s, named_level_map) == "suite"]
     return sorted(
-        [s for s in skills if s.get("type") == "ultimate"],
-        key=lambda s: s.get("name", "")
+        suites,
+        key=lambda s: (
+            -_eff_rank_int(s, named_level_map),
+            -_fusion_weight(s),
+            s.get("name", ""),
+        ),
     )
 
 
@@ -193,10 +267,10 @@ def _render_subtree(root_id, skill_map, meta, prefix, is_last, seen,
         return []
 
     connector = "└─" if is_last else "├─"
-    symbol = get_tier_symbol(skill.get("type"))
+    cat = _tree_category(skill, named_level_map)
+    symbol = get_tier_symbol(cat)
 
-    skill_type = skill.get("type", "basic")
-    display = _build_skill_display(root_id, skill_type, named_map, handle_rel,
+    display = _build_skill_display(root_id, cat, named_map, handle_rel,
                                    named_level_map=named_level_map,
                                    named_entry_level=named_entry_level)
 
@@ -326,7 +400,7 @@ def main():
     for skill in skills:
         if not _generate_skill_pages:
             continue
-        skill_type = skill.get("type", "basic")
+        skill_type = _tree_category(skill, named_level_map)
         skill_id = skill.get("id")
         skill_name = skill.get("name")
         file_path = f"registry/skills/{skill_type}/{skill_id}.md"
@@ -378,7 +452,7 @@ def main():
                 for prereq_id in prereqs:
                     prereq = skill_map.get(prereq_id)
                     if prereq:
-                        prereq_type = prereq.get("type", "basic")
+                        prereq_type = _tree_category(prereq, named_level_map)
                         f.write(f"- [{prereq.get('name')}](../{prereq_type}/{prereq_id}.md)\n")
                     else:
                         f.write(f"- {prereq_id}\n")
@@ -392,7 +466,7 @@ def main():
                 for unlock_id in unlocks:
                     unlock = skill_map.get(unlock_id)
                     if unlock:
-                        unlock_type = unlock.get("type", "basic")
+                        unlock_type = _tree_category(unlock, named_level_map)
                         f.write(f"- [{unlock.get('name')}](../{unlock_type}/{unlock_id}.md)\n")
                     else:
                         f.write(f"- {unlock_id}\n")
@@ -400,7 +474,6 @@ def main():
 
             if skill_type in ["extra", "ultimate"]:
                 f.write("## Fusion Condition\n")
-                conditions = skill.get("conditions", "")
                 if not conditions:
                     f.write("_None specified._\n\n")
                 else:
@@ -465,7 +538,7 @@ def main():
                 all_prereq_ids.add(pid)
         orphan_ids = {
             s["id"] for s in skills
-            if s.get("type") == "basic"
+            if _tree_category(s, named_level_map) == "basic"
             and s["id"] not in all_prereq_ids
             and not s.get("prerequisites")
         }
@@ -476,10 +549,10 @@ def main():
         for skill in skills:
             if skill["id"] in orphan_ids:
                 continue
-            skill_type = skill.get("type", "basic")
-            symbol = get_tier_symbol(skill_type)
-            type_label = get_type_label(meta, skill_type)
-            reg_display = _build_skill_display(skill.get('id'), skill_type, named_map, _REG_HANDLE_REL,
+            cat = _tree_category(skill, named_level_map)
+            symbol = get_tier_symbol(cat)
+            type_label = get_type_label(meta, cat)
+            reg_display = _build_skill_display(skill.get('id'), cat, named_map, _REG_HANDLE_REL,
                                                named_level_map=named_level_map,
                                                named_entry_level=named_entry_level)
             name_display = f"{symbol} {reg_display}"
@@ -489,7 +562,7 @@ def main():
         f.write("\n")
 
         # Unique Skills section
-        unique_skills = [s for s in skills if s.get("type") == "unique"]
+        unique_skills = [s for s in skills if _tree_category(s, named_level_map) == "unique"]
         if unique_skills:
             f.write("## Uniques\n\n")
             f.write("*Singular mastery skills — graph-isolated, with named implementations. Promoted via `/gaia promote --unique`.*\n\n")
@@ -511,7 +584,7 @@ def main():
         for skill in skills:
             if skill["id"] not in orphan_ids:
                 continue
-            if skill.get("type") == "unique":
+            if _tree_category(skill, named_level_map) == "unique":
                 continue
             name_display = f"○ {skill.get('name')}"
             skill_call = f"`/{skill.get('id')}`"
@@ -520,7 +593,7 @@ def main():
         f.write("\n")
 
         # Unclaimed Ultimates section
-        unclaimed = [s for s in skills if s.get("type") == "ultimate" and s["id"] not in named_map]
+        unclaimed = [s for s in skills if branch_of(s, named_level_map) == "suite" and s["id"] not in named_map]
         if unclaimed:
             f.write("## Ultimate Skills Awaiting Name\n\n")
             f.write(
@@ -545,8 +618,8 @@ def main():
         # Phase 8d — same relative-path convention as registry.md.
         _COMBO_HANDLE_REL = "../docs/u/"
         for skill in skills:
-            if skill.get("type") in ["extra", "ultimate"]:
-                skill_type = skill.get("type")
+            if branch_of(skill, named_level_map) == "suite":
+                skill_type = _tree_category(skill, named_level_map)
                 symbol = get_tier_symbol(skill_type)
                 type_label = get_type_label(meta, skill_type)
                 prereqs = [skill_map.get(pid, {}).get("name", pid) for pid in skill.get("prerequisites", [])]
@@ -569,7 +642,7 @@ def main():
 
     # generate user skill tree markdown projections
     users_dir = "skill-trees"
-    legendaries = _sorted_ultimates(skills)
+    legendaries = _sorted_ultimates(skills, named_level_map)
     if os.path.isdir(users_dir):
         for username in sorted(os.listdir(users_dir)):
             user_dir = os.path.join(users_dir, username)
@@ -602,7 +675,7 @@ def main():
                     for us in unlocked:
                         sid = us.get("skillId", "")
                         sk = skill_map.get(sid, {})
-                        sk_type = sk.get("type", "basic")
+                        sk_type = _tree_category(sk, named_level_map) if sk else "basic"
                         symbol = get_tier_symbol(sk_type)
                         type_label = get_type_label(meta, sk_type)
                         level = us.get("level") or named_level_map.get(sid, "")

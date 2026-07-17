@@ -52,6 +52,38 @@ def _get_tier_symbol(skill_type: str) -> str:
     )
 
 
+# ── Yggdrasil II read-time branch (rubric E1) ──────────────────────────────
+# Selection here is topological, mirroring generateProjections.branch_of and
+# the proven docs/js/skill-graph.js branchOf. NEVER read a dead type enum
+# (unique|ultimate|extra) and NEVER use the strict computeBranch (which maps
+# fusion-without-suiteComponents at 4★+ to 'unique' — the reverted overshoot).
+def _eff_rank_int(skill: dict, named_level_map=None) -> int:
+    v = skill.get("namedMaxLevel")
+    if v is None and named_level_map is not None:
+        v = named_level_map.get(skill.get("id"))
+    if v is None:
+        v = skill.get("level")
+    if v is None:
+        return 0
+    if isinstance(v, int):
+        return max(0, min(6, v))
+    digits = "".join(c for c in str(v) if c.isdigit())
+    return max(0, min(6, int(digits))) if digits else 0
+
+
+def _branch_of(skill: dict, named_level_map=None) -> str:
+    if not skill:
+        return "standard"
+    comps = skill.get("suiteComponents")
+    if isinstance(comps, list) and comps:
+        return "suite"
+    if skill.get("type") == "fusion":
+        return "suite"
+    if skill.get("type") == "basic" and _eff_rank_int(skill, named_level_map) >= 4:
+        return "unique"
+    return "standard"
+
+
 def _inline_rank_pill(meta: dict, level) -> str:
     """Return the inline rank pill, using [N★ · Pure] for 0★ skills."""
     label = _get_level_label(meta, level)
@@ -154,15 +186,24 @@ def render_tree(
     def _subtree(rid, sm, m, prefix, is_last, seen, **_kw):
         return []
 
-    def _sorted_ults(sks):
-        # Generic refs are rank-less — order ultimates by top named-variant star
-        # (descending), then name. Unclaimed ultimates sort last.
+    def _sorted_ults(sks, _nlm=None):
+        # Suites ordered biggest-fusion-first: descending effective rank, then
+        # descending fusion weight (suiteComponents/prereq breadth), then name.
+        # Selection is topological (branch=='suite'), not a dead type read.
+        def _weight(s):
+            comps = s.get("suiteComponents")
+            if isinstance(comps, list) and comps:
+                return len(comps)
+            return len(s.get("prerequisites", []) or [])
+
         def _key(s):
-            star = named_level_map.get(s.get("id"))
-            rank = _LEVEL_ORDER.index(star) if star in _LEVEL_ORDER else -1
-            return (-rank, s.get("name", ""))
+            return (
+                -_eff_rank_int(s, named_level_map),
+                -_weight(s),
+                s.get("name", ""),
+            )
         return sorted(
-            [s for s in sks if s.get("type") == "ultimate"],
+            [s for s in sks if _branch_of(s, named_level_map) == "suite"],
             key=_key,
         )
 
@@ -178,12 +219,16 @@ def render_tree(
         for pid in s.get("prerequisites", []):
             all_prereq_ids.add(pid)
 
-    # ── Filter sub-Ultimates ──────────────────────────────────────────────
-    # An Ultimate that appears as a direct or transitive prerequisite of
-    # another Ultimate is already rendered nested inside that parent tree.
-    # Listing it again at the top level is redundant, so we exclude it.
+    # ── Filter sub-suites ─────────────────────────────────────────────────
+    # A suite that appears as a direct or transitive prerequisite of another
+    # suite is already rendered nested inside that parent tree. Listing it
+    # again at the top level is redundant, so we exclude it. Membership is
+    # topological (branch=='suite'), not a dead type=='ultimate' read.
     def _sub_ultimate_ids(all_skills: list, smap: dict) -> set:
-        ultimate_ids = {s["id"] for s in all_skills if s.get("type") == "ultimate"}
+        ultimate_ids = {
+            s["id"] for s in all_skills
+            if _branch_of(s, named_level_map) == "suite"
+        }
         sub: set = set()
 
         def _walk(sid: str, visiting: set) -> None:
@@ -205,16 +250,17 @@ def render_tree(
     _sub_ids = _sub_ultimate_ids(skills, skill_map)
     top_level_skills = [s for s in skills if s["id"] not in _sub_ids]
 
-    legendaries = _srt(top_level_skills)
+    legendaries = _srt(top_level_skills, named_level_map)
     unique_skills = sorted(
-        [s for s in skills if s.get("type") == "unique"],
+        [s for s in skills if _branch_of(s, named_level_map) == "unique"],
         key=lambda s: s.get("id", ""),
     )
     basic_orphans = sorted(
         [
             s
             for s in skills
-            if s.get("type") == "basic"
+            if _branch_of(s, named_level_map) == "standard"
+            and s.get("type") == "basic"
             and s["id"] not in all_prereq_ids
             and not s.get("prerequisites")
         ],

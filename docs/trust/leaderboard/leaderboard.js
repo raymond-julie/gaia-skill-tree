@@ -116,7 +116,7 @@
     rank4: tok('--rank-4-rgb') || '232, 121, 249',
     rank5: tok('--rank-5-rgb') || '251, 191, 36',
     rank6: tok('--rank-6-rgb') || '251, 191, 36',
-    honorRed: tok('--honor-red-rgb') || '239, 68, 68',
+    honorRed: tok('--honor-red-rgb') || '251, 191, 36',
     basic: tok('--tier-basic-rgb') || '56, 189, 248',
     muted: tok('--muted') || 'rgb(100, 116, 139)',
     text: tok('--text') || 'rgb(226, 232, 240)',

@@ -289,6 +289,10 @@
     var handle = contributor.handle;
     var skillId = contributor.topSkill.id;
     var slug = skillId.split('/').pop();
+    // Use enriched name from named index (set by withNamedSkillMeta) when available.
+    var displayName = (contributor.topSkill.name && contributor.topSkill.name !== slug)
+      ? contributor.topSkill.name
+      : slug;
     var lvl = levelNum(contributor.topSkill.level);
     var branch = computeBranchForTopSkill(contributor);
     var anim = tier === 'ultimate' ? getAnim(skillId) : '';
@@ -339,7 +343,7 @@
     // Meta
     html += '<div class="hero-card__meta">';
     html += '<div class="hero-card__tier-mark" aria-label="' + esc(tierLabel) + '"><span aria-hidden="true">' + esc(glyph) + '</span>' + esc(tierLabel) + '</div>';
-    html += '<h2 class="hero-card__name" id="' + esc(titleId) + '">' + esc(slug) + '</h2>';
+    html += '<h2 class="hero-card__name" id="' + esc(titleId) + '">' + esc(displayName) + '</h2>';
     html += '<div class="hero-card__handle">@' + esc(handle) + '</div>';
     if (epithet) {
       html += '<p class="hero-card__epithet">' + esc(epithet) + '</p>';
@@ -351,8 +355,10 @@
     html += '</div>';
     html += '</div>';
 
-    // Share button
-    html += '<button class="hero-card__share" data-share-handle="' + esc(handle) + '" data-share-skill="' + esc(skillId) + '" data-share-branch="' + esc(branch) + '">';
+    // Share button: data-share-type carries the stored skill type (read by
+    // hero-share.js to build the ns object), data-share-branch carries the
+    // derived branch (used for visual tinting / modal context).
+    html += '<button class="hero-card__share" data-share-handle="' + esc(handle) + '" data-share-skill="' + esc(skillId) + '" data-share-branch="' + esc(branch) + '" data-share-type="' + esc(contributor.topSkill.type || 'basic') + '">';
     html += '<svg class="ico" width="14" height="14" aria-hidden="true"><use href="../assets/icons.svg#link"></use></svg>';
     html += 'Share plaque';
     html += '</button>';

@@ -234,7 +234,7 @@
       padding-bottom: 0.5rem;
       margin-bottom: 0.3rem;
     }
-    .bd-gen-status.is-error { color: var(--honor, #ef4444); border-bottom: none; }
+    .bd-gen-status.is-error { color: var(--honor-red, #ef4444); border-bottom: none; }
 
     /* ── Repo picker ── */
     .bd-repo-label {
@@ -499,7 +499,7 @@
     }
     .bd-cta-title .bd-cta-icon {
       flex-shrink: 0;
-      color: var(--honor-red, #ef4444);
+      color: var(--rank-5, #fbbf24);
     }
     .bd-cta-sub {
       font-size: .82rem;
@@ -541,13 +541,13 @@
       background: rgba(251, 191, 36, .08);
     }
     .bd-cta-btn-primary {
-      background: var(--honor-red, #ef4444);
-      border-color: var(--honor-red, #ef4444);
-      color: #fff;
+      background: var(--rank-5, #fbbf24);
+      border-color: var(--rank-5, #fbbf24);
+      color: #1a0f00;
     }
     .bd-cta-btn-primary:hover {
-      background: #dc2626;
-      border-color: #dc2626;
+      background: #d97706;
+      border-color: #d97706;
       color: #fff;
     }
     .bd-cta-repo-row {
@@ -1061,7 +1061,7 @@
           </div>
           <div>
             <div class="bd-variant-name">handle.svg</div>
-            <div class="bd-variant-desc">Single-line identity. <code>@handle</code> in honor red, selected named skill in its rank color, star count in the same hue.</div>
+            <div class="bd-variant-desc">Single-line identity. <code>@handle</code> in origin gold, selected named skill in its rank color, star count in the same hue.</div>
           </div>
         </div>
         <div class="bd-variant">
@@ -1144,7 +1144,7 @@
           </tr>
           <tr>
             <td>4★</td>
-            <td><span style="color:#e879f9;font-weight:600;">Hardened</span></td>
+            <td><span style="color:#e879f9;font-weight:600;">Extra</span></td>
             <td><span class="bd-rank-swatch" style="background:#e879f9;"></span>Fuchsia</td>
             <td>Class B/A</td>
             <td>Production-ready. Comprehensive tests, active maintenance, and documented reliability in real-world usage.</td>
@@ -1158,17 +1158,17 @@
           </tr>
           <tr>
             <td>5★</td>
-            <td><span style="color:#fbbf24;font-weight:600;">Transcendent</span></td>
+            <td><span style="color:#fbbf24;font-weight:600;">Ultimate</span></td>
             <td><span class="bd-rank-swatch" style="background:#fbbf24;"></span>Amber</td>
             <td>Class B/A + 10k★</td>
-            <td>Mastery. Often an Ultimate capstone. Requires a repository with 10,000+ stars and peer-reviewed or battle-tested evidence.</td>
+            <td>Mastery. Often an Ultimate suite capstone. Requires a repository with 10,000+ stars and peer-reviewed or battle-tested evidence.</td>
           </tr>
           <tr>
             <td>6★</td>
             <td><span style="color:#fbbf24;font-weight:700;letter-spacing:.02em;">Apex</span></td>
             <td><span class="bd-rank-swatch" style="background:linear-gradient(90deg,#fbbf24,#38bdf8);"></span>Gold → Cyan</td>
             <td>Class A + Origin 5★ Fusion</td>
-            <td>The pinnacle of Gaia. Extreme ecosystem impact. Must emerge from a fusion involving at least one Origin 5★ Transcendent skill, with Tier A evidence.</td>
+            <td>The pinnacle of Gaia. Extreme ecosystem impact. Must emerge from a fusion involving at least one Origin 5★ Ultimate skill, with Tier A evidence.</td>
           </tr>
         </tbody>
       </table>
@@ -1188,7 +1188,7 @@
         <tbody>
           <tr>
             <td><code>handle.svg</code></td>
-            <td>Your identity as a named contributor — <code>@handle</code> in honor red, your top skill in its rank color, star count alongside. The full picture at a glance.</td>
+            <td>Your identity as a named contributor — <code>@handle</code> in origin gold, your top skill in its rank color, star count alongside. The full picture at a glance.</td>
             <td>Contributors with at least one named skill in the registry.</td>
           </tr>
           <tr>
@@ -1303,8 +1303,8 @@
       { n: 1, label: "Awakened · 1★" },
       { n: 2, label: "Named · 2★" },
       { n: 3, label: "Evolved · 3★" },
-      { n: 4, label: "Hardened · 4★" },
-      { n: 5, label: "Transcendent · 5★" },
+      { n: 4, label: "Extra · 4★" },
+      { n: 5, label: "Ultimate · 5★" },
       { n: 6, label: "Apex · 6★" },
       { n: "unique", label: "Unique · 4★" },
     ];

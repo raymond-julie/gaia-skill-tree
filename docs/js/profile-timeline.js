@@ -197,7 +197,7 @@
       '.ptl2__chip--rank_up  { color: #86efac; background: rgba(134,239,172,.07); border: 1px solid rgba(134,239,172,.2); }',
       '.ptl2__chip--ascend   { color: #86efac; background: rgba(134,239,172,.07); border: 1px solid rgba(134,239,172,.2); }',
       '.ptl2__chip--promote  { color: #86efac; background: rgba(134,239,172,.07); border: 1px solid rgba(134,239,172,.2); }',
-      '.ptl2__chip--demote   { color: #ef4444; background: rgba(239,68,68,.07);   border: 1px solid rgba(239,68,68,.2); }',
+      '.ptl2__chip--demote   { color: var(--danger,#ef4444); background: rgba(239,68,68,.07);   border: 1px solid rgba(239,68,68,.2); }',
       '.ptl2__chip--fuse     { color: var(--tier-ultimate,#f59e0b); background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.2); }',
       '.ptl2__chip--default  { color: var(--muted,#64748b); background: rgba(100,116,139,.07); border: 1px solid rgba(100,116,139,.15); }',
 

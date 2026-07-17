@@ -13,7 +13,7 @@
   --heroes-gold-rgb: 251, 191, 36;
   --heroes-frost: oklch(0.92 0.01 220);
   --heroes-frost-dim: oklch(0.75 0.03 230);
-  --heroes-honor: var(--honor-red, oklch(0.63 0.24 25));
+  --heroes-honor: var(--honor-red, oklch(0.80 0.15 85));
   --heroes-font-display: var(--font-display, 'EB Garamond', Georgia, serif);
   --heroes-font-body: var(--font-body, 'Bricolage Grotesque', Inter, sans-serif);
   --heroes-font-mono: var(--font-mono, 'Departure Mono', monospace);
@@ -810,7 +810,7 @@
 .hero-card__handle {
   font-family: var(--heroes-font-mono);
   font-size: 0.9rem;
-  color: var(--honor-red, oklch(0.63 0.24 25));
+  color: var(--honor-red, #fbbf24);
   letter-spacing: 0.04em;
   opacity: 0.95;
   margin: 0 0 0.5rem;

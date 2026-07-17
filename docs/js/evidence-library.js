@@ -87,7 +87,7 @@
       render();
     } catch (err) {
       console.error('Evidence Library init failed:', err);
-      evIndexEl.innerHTML = `<div class="ev-empty-state" style="color: var(--honor-red);">Error loading evidence library data. Please try again later.</div>`;
+      evIndexEl.innerHTML = `<div class="ev-empty-state" style="color: var(--danger, #ef4444);">Error loading evidence library data. Please try again later.</div>`;
     }
   }
 

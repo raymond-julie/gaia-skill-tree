@@ -285,7 +285,7 @@ button.plaque__slug:focus-visible {
 .plaque__handle .atlas-handle,
 .plaque-contrib-row .atlas-handle,
 .plaque-contributor {
-  color: var(--honor-red, #ef4444);
+  color: var(--honor-red, #fbbf24);
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -1997,7 +1997,7 @@ button.plaque__slug:focus-visible {
 .ascension-log-row:last-child { border-bottom: none; }
 .ascension-log-row:hover      { background: rgba(255, 255, 255, 0.025); }
 .al-date   { color: rgba(226, 232, 240, 0.35); white-space: nowrap; }
-.al-action { color: var(--honor-red, #ef4444); font-weight: 700; }
+.al-action { color: var(--honor-red, #fbbf24); font-weight: 700; }
 .al-skill  { color: rgba(226, 232, 240, 0.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .al-level  { color: var(--apex-gold, #fbbf24); text-align: right; }
 
@@ -2077,8 +2077,8 @@ button.plaque__slug:focus-visible {
 }
 .profile-back--alt:hover,
 .profile-back--alt:focus-visible {
-  border-color: var(--honor-red, #ef4444);
-  color: var(--honor-red, #ef4444);
+  border-color: var(--honor-red, #fbbf24);
+  color: var(--honor-red, #fbbf24);
 }
 .ico-flip-x {
   transform: scaleX(-1);
@@ -2087,7 +2087,7 @@ button.plaque__slug:focus-visible {
   font-family: var(--font-body, 'Bricolage Grotesque', sans-serif);
   font-size: clamp(2rem, 5vw, 3.2rem);
   font-weight: 700;
-  color: var(--honor-red, #ef4444);
+  color: var(--honor-red, #fbbf24);
   margin-bottom: 0.5rem;
 }
 .profile-handle::before {
@@ -2418,9 +2418,9 @@ button.plaque__slug:focus-visible {
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 .plaque__claim-btn[data-claim="claimed"] {
-  border-color: var(--honor-red, #ef4444);
-  background: rgba(239, 68, 68, 0.07);
-  color: var(--honor-red, #ef4444);
+  border-color: var(--honor-red, #fbbf24);
+  background: rgba(251, 191, 36, 0.07);
+  color: var(--honor-red, #fbbf24);
 }
 .plaque__claim-btn:hover {
   border-color: var(--text, #e2e8f0);
@@ -2634,7 +2634,7 @@ button.plaque__slug:focus-visible {
 .profile-activity-action[data-action="evidence"] { color: var(--rank-3, #a78bfa); }
 
 .profile-activity-skill {
-  color: var(--honor-red, #ef4444);
+  color: var(--honor-red, #fbbf24);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2688,7 +2688,7 @@ button.plaque__slug:focus-visible {
   font-family: var(--font-body, 'Bricolage Grotesque', sans-serif);
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--honor-red, #ef4444);
+  color: var(--honor-red, #fbbf24);
   text-decoration: none;
   letter-spacing: 0.02em;
 }
@@ -3087,17 +3087,17 @@ button.plaque__slug:focus-visible {
   box-shadow: 0 0 8px rgba(134, 239, 172, 0.2);
 }
 .ptl2__delta-badge--neg {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+  color: var(--danger, #ef4444);
+  background: rgba(var(--danger-rgb, 239, 68, 68), 0.1);
+  border: 1px solid rgba(var(--danger-rgb, 239, 68, 68), 0.2);
+  box-shadow: 0 0 8px rgba(var(--danger-rgb, 239, 68, 68), 0.2);
 }
 
 .ptl2__event--rank-down .ptl2__dot {
   transform: scale(1.15);
-  background: #ef4444 !important;
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  background: var(--danger, #ef4444) !important;
+  border-color: var(--danger, #ef4444) !important;
+  box-shadow: 0 0 8px rgba(var(--danger-rgb, 239, 68, 68), 0.6);
 }
 
 /* ============================================================
@@ -3180,6 +3180,9 @@ button.plaque__slug:focus-visible {
 
 .plaque--mini .plaque__handle a {
   color: var(--honor-red) !important;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
   text-decoration: none;
   transition: opacity 0.2s;
 }
@@ -3437,7 +3440,7 @@ button.plaque__slug:focus-visible {
 }
 
 .hoh-fs-disclaimer-handle {
-  color: var(--honor-red, #ef4444);
+  color: var(--honor-red, #fbbf24);
   font-weight: 600;
 }
 
@@ -3571,7 +3574,7 @@ button.plaque__slug:focus-visible {
 }
 .hoh-fs-confirm[hidden] { display: none; }
 .hoh-fs-confirm-text #hohFsHandleText {
-  color: var(--honor-red, #ef4444);
+  color: var(--honor-red, #fbbf24);
   font-weight: 600;
 }
 .hoh-fs-confirm-btn {

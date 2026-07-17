@@ -31,9 +31,13 @@
   --text: #e2e8f0;
   --muted: #64748b;
   --code-bg: #0f172a;
-  /* Hunter's Atlas brand-voice role tokens (Phase 1) */
-  --honor-red: #ef4444;
-  --honor-red-rgb: 239, 68, 68;
+  /* Hunter's Atlas brand-voice role tokens (Phase 1)
+     --honor-red is the contributor-origin-marker token (gold since Yggdrasil II).
+     --danger is the semantic error / destructive-action token (red). */
+  --honor-red: #fbbf24;
+  --honor-red-rgb: 251, 191, 36;
+  --danger: #ef4444;
+  --danger-rgb: 239, 68, 68;
   --apex-gold: var(--rank-5);
   --apex-gold-rgb: 251, 191, 36;
   /* Gaia Research sibling-brand bridge tokens. Rimuru-Blue is the EXACT
@@ -916,13 +920,13 @@ button.nav-copy-agent {
 }
 
 .nav-named-explorer {
-  color: #ef4444 !important;
+  color: var(--honor-red) !important;
   font-weight: 700;
   font-family: var(--font-body)
 }
 
 .nav-named-explorer:hover {
-  color: #f87171 !important
+  color: rgba(var(--honor-red-rgb), .78) !important
 }
 
 /* Registry button looks identical to anchor siblings. Focus ring
@@ -1138,7 +1142,7 @@ nav.docs-nav:hover .nav-sep {
 
 .nav-search-btn:hover,
 .nav-search-btn:focus-visible {
-  color: #f87171;
+  color: rgba(var(--honor-red-rgb), .78);
   transform: scale(1.08);
   filter: drop-shadow(0 0 8px rgba(var(--honor-red-rgb), .5));
   outline: none;
@@ -2146,7 +2150,7 @@ h2 {
 }
 
 .rs-named {
-  color: #ef4444
+  color: var(--honor-red)
 }
 
 
@@ -2630,7 +2634,7 @@ tr:hover td {
 .usp-id {
   font-family: var(--font-mono);
   font-size: .72rem;
-  color: #ef4444;
+  color: var(--honor-red);
   margin-bottom: .85rem;
 }
 
@@ -3555,7 +3559,7 @@ tr:hover td {
 .tree-ult-contributor {
   color: var(--honor-red) !important;
   font-weight: 800 !important;
-  text-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
+  text-shadow: 0 0 8px rgba(var(--honor-red-rgb), 0.4) !important;
 }
 
 .tree-ult-slash {
@@ -5671,7 +5675,7 @@ tr:hover td {
 
 /* ── named h2 red ── */
 #named h2 {
-  color: #ef4444;
+  color: var(--honor-red);
 }
 
 /* ── search & sort controls ── */
@@ -6026,7 +6030,7 @@ tr:hover td {
 }
 
 .fn-contrib {
-  color: #ef4444 !important;
+  color: var(--honor-red) !important;
   font-weight: 700
 }
 
@@ -7115,7 +7119,7 @@ footer.footer-v2::before {
 
 .se-contrib {
   font-size: .88rem;
-  color: #ef4444;
+  color: var(--honor-red);
   margin-bottom: 1rem;
 }
 
@@ -10951,7 +10955,7 @@ button.nav-graph-trigger:hover {
 }
 
 .dag-node-label-contrib {
-  color: #ef4444;
+  color: var(--honor-red);
   font-weight: 600;
 }
 
@@ -12100,7 +12104,7 @@ body[data-overall-grade="S"] .report-card {
 
 /* Fail indicator */
 .apex-gate-checklist .apex-fail {
-  color: var(--honor-red, #ef4444);
+  color: var(--danger, #ef4444);
   font-weight: 700;
   flex-shrink: 0;
   font-family: var(--font-mono);

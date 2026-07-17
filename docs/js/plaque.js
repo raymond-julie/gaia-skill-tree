@@ -655,8 +655,8 @@
 
     var left =
       '<div class="plaque__col plaque-detail-left">' +
-        _fieldOrb(ns, 'lg') +
         _fieldAvatar(ns, { size: 56 }) +
+        _fieldOrb(ns, 'lg') +
         _fieldSlug(ns) +
         _fieldHandleRow(ns) +
         _fieldRank(ns, 'stars') +

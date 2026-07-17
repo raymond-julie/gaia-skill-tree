@@ -782,9 +782,16 @@
       const mobileTree = window.matchMedia('(max-width:700px)').matches;
       const heroCenterValue = parseFloat(getComputedStyle(canvas.parentElement).getPropertyValue('--hero-tree-center-x'));
       const heroCenterRatio = Number.isFinite(heroCenterValue) ? heroCenterValue : (mobileTree ? 0.5 : 0.72);
-      const heroHeightFactor = mobileTree ? 0.84 : 0.71;
+      // Read the poster backdrop scale so the 2D node overlay matches the raster's
+      // zoom level.  The raster is CSS-scaled by --hero-tree-backdrop-scale (1.2 on
+      // desktop); the canvas element itself is NOT scaled, so heroFit must be
+      // multiplied by the same factor to keep 2D nodes on the poster branches.
+      // Mobile uses its own layout (full-bleed, scale(1.5) raster) and stays at 0.84.
+      const backdropScaleRaw = parseFloat(getComputedStyle(canvas.parentElement).getPropertyValue('--hero-tree-backdrop-scale'));
+      const backdropScale = (!mobileTree && Number.isFinite(backdropScaleRaw) && backdropScaleRaw > 0) ? backdropScaleRaw : 1;
+      const heroHeightFactor = mobileTree ? 0.84 : 0.71 * backdropScale;
       const heroFit = Math.max(0.05, Math.min(
-        state.width * (mobileTree ? 0.90 : 0.60) / bounds.width,
+        state.width * (mobileTree ? 0.90 : 0.60 * backdropScale) / bounds.width,
         state.height * heroHeightFactor / bounds.height
       ));
       const fieldFit = Math.max(0.05, Math.min(

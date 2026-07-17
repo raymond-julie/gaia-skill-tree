@@ -379,10 +379,12 @@ class TestPaletteFromRegistry:
             assert graph_mod.PALETTE[skill_type]["fill"] == tier_hex(skill_type)
 
     def test_extra_and_ultimate_no_longer_drifted(self):
-        # The old hardcoded values were extra=#a78bfa and ultimate=#fbbf24.
-        # After sourcing from the registry they must be the canonical tokens.
-        assert graph_mod.PALETTE["extra"]["fill"] == "#c084fc"
-        assert graph_mod.PALETTE["ultimate"]["fill"] == "#f59e0b"
+        # Under Ygg II, types are collapsed to basic/fusion. Ensure the palette
+        # maps them to tier_hex values without hardcoded drift.
+        from gaia_cli.formatting import tier_hex
+        assert graph_mod.PALETTE["basic"]["fill"] == tier_hex("basic")
+        assert graph_mod.PALETTE["extra"]["fill"] == tier_hex("extra")
+        assert graph_mod.PALETTE["ultimate"]["fill"] == tier_hex("ultimate")
 
     def test_no_raw_push_green_hex(self):
         from gaia_cli.formatting import COLOR_LOCAL_USER

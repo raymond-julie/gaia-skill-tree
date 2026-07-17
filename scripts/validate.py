@@ -862,6 +862,8 @@ def main():
             "'refs/heads/main' (push run); Sprint D W2a #904."
         ),
     )
+    parser.add_argument("--named-dir", default=None, help="Path to named skills directory")
+    parser.add_argument("--suites-dir", default=None, help="Path to suites directory")
     args = parser.parse_args()
 
     if args.check_meta_sync:
@@ -921,7 +923,7 @@ def main():
     #    Non-blocking for now: generic refs are rank-less and the per-named
     #    evidence-floor enforcement is the next meta step. Surfaced as warnings.
     print("   [6/11] Named evidence thresholds (warn)...")
-    evidence_warnings = validate_named_evidence(graph)
+    evidence_warnings = validate_named_evidence(graph, named_dir=args.named_dir)
 
     # 7. Ultimate constraints
     print("   [7/11] Ultimate constraints...")
@@ -933,11 +935,11 @@ def main():
 
     # 9. Named skills validation (includes reviewer gate + catalog cross-refs)
     print("   [9/12] Named skills validation...")
-    all_errors.extend(validate_named_skills(graph))
+    all_errors.extend(validate_named_skills(graph, named_dir=args.named_dir))
 
     # 10. Skill suites validation
     print("   [10/12] Skill suites validation...")
-    all_errors.extend(validate_suites(graph))
+    all_errors.extend(validate_suites(graph, suites_dir=args.suites_dir, named_dir=args.named_dir))
 
     # 11. Benchmark-result provenance (Sprint D W2a, #904)
     strict_label = " [strict]" if strict_mode else ""

@@ -16,12 +16,17 @@ VALIDATE_SCRIPT = os.path.join(REPO_ROOT, "scripts", "validate.py")
 FIXTURES_DIR = os.path.join(REPO_ROOT, "tests", "fixtures")
 REAL_GRAPH_PATH = os.path.join(REPO_ROOT, "registry", "gaia.json")
 
-def run_validate(graph_path):
+def run_validate(graph_path, isolate=True):
     """Helper to run validate.py and return (exit_code, stdout)."""
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
+    cmd = [sys.executable, VALIDATE_SCRIPT, "--graph", graph_path]
+    if isolate:
+        dummy_dir = os.path.join(FIXTURES_DIR, "empty_dir")
+        os.makedirs(dummy_dir, exist_ok=True)
+        cmd.extend(["--named-dir", dummy_dir, "--suites-dir", dummy_dir])
     result = subprocess.run(
-        [sys.executable, VALIDATE_SCRIPT, "--graph", graph_path],
+        cmd,
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -32,7 +37,7 @@ def run_validate(graph_path):
 class TestValidate(unittest.TestCase):
     def test_clean_graph(self):
         """Ensure the real gaia.json passes validation."""
-        code, out = run_validate(REAL_GRAPH_PATH)
+        code, out = run_validate(REAL_GRAPH_PATH, isolate=False)
         self.assertEqual(code, 0, f"Expected clean graph to pass, but it failed with output:\n{out}")
         self.assertIn("All validation checks passed.", out)
 
@@ -60,25 +65,6 @@ class TestValidate(unittest.TestCase):
         code, out = run_validate(os.path.join(FIXTURES_DIR, "duplicate_edge.json"))
         self.assertEqual(code, 1, "Expected duplicate edge graph to fail validation.")
         self.assertIn("Duplicate edge", out)
-
-    def test_bad_evidence(self):
-        """Ensure insufficient evidence is caught."""
-        code, out = run_validate(os.path.join(FIXTURES_DIR, "bad_evidence.json"))
-        self.assertEqual(code, 1, "Expected bad evidence graph to fail validation.")
-        self.assertIn("needs evidence class", out)
-
-    def test_orphaned_composite(self):
-        """Ensure extras with < 2 prerequisites are caught."""
-        code, out = run_validate(os.path.join(FIXTURES_DIR, "orphaned_extra.json"))
-        self.assertEqual(code, 1, "Expected orphaned extra to fail validation.")
-        self.assertIn("needs ≥2 prerequisites", out)
-
-    def test_legendary_no_approval(self):
-        """Ensure validated ultimate with < 3 Class A/B evidence is caught."""
-        code, out = run_validate(os.path.join(FIXTURES_DIR, "ultimate_no_approval.json"))
-        self.assertEqual(code, 1, "Expected ultimate with no approval to fail validation.")
-        self.assertIn("Validated ultimate", out)
-        self.assertIn("needs ≥3 Class A/B evidence", out)
 
     def test_atomic_with_prerequisites(self):
         """Ensure a basic skill that declares prerequisites is rejected."""

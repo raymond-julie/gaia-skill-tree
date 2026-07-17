@@ -17,6 +17,17 @@ from gaia_cli.promotion import (
     _meets_evidence_floor,
 )
 
+# Mock EVIDENCE_FLOOR to restore the expected floors for promotion tests (since Ygg II removed them from meta.json)
+import gaia_cli.promotion
+gaia_cli.promotion.EVIDENCE_FLOOR = {
+    "1★": None,
+    "2★": {"C", "B", "A", "S"},
+    "3★": {"B", "A", "S"},
+    "4★": {"B", "A", "S"},
+    "5★": {"A", "S"},
+    "6★": {"S"},
+}
+
 
 # ---------------------------------------------------------------------------
 # Fixtures

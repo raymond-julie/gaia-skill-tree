@@ -1314,6 +1314,12 @@
       { n: 1, label: "Awakened · 1★" },
     ];
     let samplerIdx = 0;
+    // Claim-integrity pin: the "Include in README" / claim preview and its copied
+    // markdown ALWAYS represent 1★ — never the sampler's cycling rank. A higher
+    // rank leaking into a fresh handle's claim would misrepresent standing
+    // (redaction/claim-integrity issue). The sampler may still cycle 1★→6★ as a
+    // demo; the two paths are decoupled. CLAIM_RANK is the fixed 1★ descriptor.
+    const CLAIM_RANK = SAMPLER_RANKS.find(r => r.n === 1) || { n: 1, label: "Awakened · 1★" };
     const samplerImg = document.getElementById("bd-sampler-img");
     const samplerLbl = document.getElementById("bd-sampler-lbl");
     function sampleSrc(n) {
@@ -1325,9 +1331,10 @@
     function refreshSamplerImg() {
       const r = SAMPLER_RANKS[samplerIdx];
       samplerImg.src = sampleSrc(r.n);
-      if (currentState.handle === "gaia-bot") {
-        badges.innerHTML = `<img src="${sampleSrc(r.n)}" alt="${r.label}" style="height:28px;display:block;">`;
-      }
+      // The sampler drives ONLY its own preview (samplerImg/samplerLbl). It must
+      // NOT repaint the claim/README badge preview (`badges`) — that surface is
+      // pinned to CLAIM_RANK by seedSample() and must never inherit the cycling
+      // rank (claim-integrity: no higher-rank leak into a fresh handle's claim).
     }
     document.getElementById("bd-sampler-btn").addEventListener("click", () => {
       samplerIdx = (samplerIdx + 1) % SAMPLER_RANKS.length;
@@ -1922,8 +1929,10 @@
 
       document.getElementById("readme-sim-title").textContent = "my-project";
       rowsEl.innerHTML = "";
-      const seedSampleSrc = sampleSrc(SAMPLER_RANKS[samplerIdx].n);
-      const seedLabel = SAMPLER_RANKS[samplerIdx].label;
+      // Claim preview + README markdown are PINNED to 1★ (CLAIM_RANK), never the
+      // sampler's cycling rank — cycling the demo to 6★ leaves this at 1★.
+      const seedSampleSrc = sampleSrc(CLAIM_RANK.n);
+      const seedLabel = CLAIM_RANK.label;
       badges.innerHTML = `<img src="${seedSampleSrc}" alt="${seedLabel}" style="height:28px;display:block;">`;
 
       // Show rank checkbox only; no copy buttons in seed state

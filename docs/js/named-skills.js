@@ -36,11 +36,12 @@
  * silently masking the asset drift.
  */
 (function () {
-  // Rank-tier group headers show the SUITE ladder word as the representative
-  // label for a whole rank layer (individual items carry their own emitted
-  // branch via the plaque shell). Held as a const so the branch key is not an
-  // inline literal at each call site (taxonomy-authority guard).
-  var SUITE_LADDER = 'suite';
+  // Rank-tier group headers and rail markers read each group's EMITTED branch
+  // composition (GaiaSemantics.branchOf) to pick the rank word: a uniform layer
+  // takes that branch's word (unique→'Unique', suite→'Extra', standard→shared),
+  // a mixed 4★+ layer takes the neutral star-only label. There is NO hard-wired
+  // branch ladder — the old SUITE_LADDER const mislabelled Unique groups "Extra"
+  // (taxonomy-authority guard: never claim one branch's word for a mixed layer).
   function esc(str) {
     return String(str == null ? '' : str)
       .replace(/\\/g,'\\\\').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -159,8 +160,21 @@
     var rankTiers = Object.keys(dagRankGroups).map(Number).sort(function(a, b) { return b - a; });
     var ranks = rankTiers.map(function(rn) { return dagRankGroups[rn]; });
     // Record present rank tiers for the global AlphaRail — label via GaiaSemantics.
+    // Carry each layer's EMITTED branch composition: 'unique'/'suite'/'standard'
+    // when every node in the layer shares that branch, else null (mixed → the
+    // marker must NOT claim one branch's word). Same emitted-field read as
+    // isUniqueTier below (namedIds[id] || dagNodes[id] via GaiaSemantics.branchOf).
+    function layerBranch(ids) {
+      if (!ids || !ids.length) return null;
+      if (!(window.GaiaSemantics && typeof window.GaiaSemantics.branchOf === 'function')) return null;
+      var first = window.GaiaSemantics.branchOf(namedIds[ids[0]] || dagNodes[ids[0]]);
+      for (var i = 1; i < ids.length; i++) {
+        if (window.GaiaSemantics.branchOf(namedIds[ids[i]] || dagNodes[ids[i]]) !== first) return null;
+      }
+      return first;
+    }
     window._gaiaFlowRanks = rankTiers.map(function(rn) {
-      return { tier: 'rank-' + rn, rankNum: rn, count: dagRankGroups[rn].length, targetId: 'ns-rank-' + rn };
+      return { tier: 'rank-' + rn, rankNum: rn, count: dagRankGroups[rn].length, targetId: 'ns-rank-' + rn, branch: layerBranch(dagRankGroups[rn]) };
     });
 
     function levelNum(level) {
@@ -225,7 +239,15 @@
         var miniHtml = (window.plaque && typeof window.plaque.renderMini === 'function')
           ? window.plaque.renderMini(miniNs, dagOpts)
           : '';
-        var colorVar = isGhost ? 'var(--muted)' : 'var(--tier-' + (s.type || 'basic') + ', var(--muted))';
+        // Ygg-II E1: dot color reads the EMITTED branch (ns || s, the same
+        // namedIds[id] || dagNodes[id] lookup used by isUniqueTier above), NEVER the
+        // dead type enum. Branch→token mirrors plaque.css: standard→--tier-basic,
+        // suite→--tier-fusion, unique→--tier-unique.
+        var dagBranch = (window.GaiaSemantics && typeof window.GaiaSemantics.branchOf === 'function')
+          ? window.GaiaSemantics.branchOf(ns || s)
+          : 'standard';
+        var BRANCH_TOKEN = { standard: '--tier-basic', suite: '--tier-fusion', unique: '--tier-unique' };
+        var colorVar = isGhost ? 'var(--muted)' : 'var(' + (BRANCH_TOKEN[dagBranch] || '--tier-basic') + ', var(--muted))';
         if (!isGhost && s.level && String(s.level).indexOf('6') !== -1) {
           colorVar = 'var(--rank-6)';
         }
@@ -570,20 +592,51 @@
         return score;
       }
 
-      // Rank group header — uses GaiaSemantics.rankWord (suite ladder for the
-      // representative label). The suite label is the displayed rank name for the
-      // group; unique/standard items within the group carry their own data-branch
-      // from the plaque shell (_shell) for visual differentiation (darker/gold).
-      function groupHeader(rankNum, id) {
+      // Rank group header — labels by the group's EMITTED branch composition
+      // (GaiaSemantics.branchOf), never a hard-wired suite ladder. Groups are
+      // per-rank layers; within a layer withinGroupSort clusters Unique→Suite→
+      // standard. A UNIFORM-branch layer takes that branch's rank word + tier
+      // token (unique→'Unique'/--tier-unique purple, suite→'Extra'/--tier-fusion,
+      // standard→shared word). A MIXED layer (Unique + Suite together at 4★+) must
+      // NOT claim one branch's word, so it falls back to the neutral star-only
+      // label — the per-skill plaque shells still carry their own data-branch skin.
+      // 1★–3★ words are branch-agnostic, so the leak only ever appeared at 4★+.
+      function groupBranch(items) {
+        if (!items || !items.length) return null;
+        var branchOf = (window.GaiaSemantics && typeof window.GaiaSemantics.branchOf === 'function')
+          ? window.GaiaSemantics.branchOf
+          : function(ns) { return (ns && ns.branch) || 'standard'; };
+        var first = branchOf(items[0]);
+        for (var i = 1; i < items.length; i++) {
+          if (branchOf(items[i]) !== first) return null; // mixed → no single branch
+        }
+        return first;
+      }
+      var GROUP_BRANCH_TOKEN = { standard: '--tier-basic', suite: '--tier-fusion', unique: '--tier-unique' };
+      function groupHeader(rankNum, id, items) {
         var rn = parseInt(rankNum, 10) || 0;
-        var word = (window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function')
-          ? window.GaiaSemantics.rankWord(rn, SUITE_LADDER)
-          : (rn + '★');
+        var branch = groupBranch(items);
+        // Uniform-branch group → branch-forked rank word; mixed 4★+ group →
+        // neutral star-only (rankWord would otherwise emit the suite word 'Extra').
+        var word;
+        if (branch && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
+          word = window.GaiaSemantics.rankWord(rn, branch);
+        } else if (rn <= 3 && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
+          word = window.GaiaSemantics.rankWord(rn, 'standard'); // shared, branch-agnostic
+        } else {
+          word = ''; // mixed 4★+ → neutral: just the star tier below
+        }
         var glyph = rn >= 4 ? '◆' : '○';
-        var colorVar = 'var(--rank-' + rn + ', var(--text))';
-        return '<div class="ns-group-header ns-group-rank" id="ns-group-' + esc(String(id)) + '" data-rank="' + esc(String(rn)) + '">' +
+        // Group-level color: uniform-branch group tints by its tier token; a mixed
+        // or plain group keeps the neutral per-rank token.
+        var tierToken = (branch && branch !== 'standard') ? GROUP_BRANCH_TOKEN[branch] : null;
+        var colorVar = tierToken ? 'var(' + tierToken + ', var(--rank-' + rn + ', var(--text)))'
+                                 : 'var(--rank-' + rn + ', var(--text))';
+        var label = word ? (esc(word) + ' · ' + rn + '★') : (rn + '★');
+        return '<div class="ns-group-header ns-group-rank" id="ns-group-' + esc(String(id)) + '" data-rank="' + esc(String(rn)) + '"' +
+          (branch ? ' data-branch="' + esc(branch) + '"' : '') + '>' +
           '<span class="ns-group-glyph ns-group-rank-glyph" style="color:' + colorVar + '">' + glyph + '</span>' +
-          esc(word) + ' · ' + rn + '★' +
+          label +
         '</div>';
       }
 
@@ -669,19 +722,25 @@
           if (typeof window._wireTrustNotches === 'function') window._wireTrustNotches(grid);
           // Flow markers mirror the DAG rank layers present (highest rank = visual
           // top, matching column-reverse layout). renderFlowchartView records
-          // them on window._gaiaFlowRanks with { tier, rankNum, count, targetId }.
-          // Yggdrasil II: labels come from GaiaSemantics.rankWord (suite ladder),
-          // color keys on --rank-N token. No dead enum labels.
+          // them on window._gaiaFlowRanks with { tier, rankNum, count, targetId, branch }.
+          // Yggdrasil II: labels read the layer's EMITTED branch (r.branch) — a
+          // uniform layer gets that branch's rank word, a mixed 4★+ layer gets the
+          // neutral star-only label (never the hard-wired suite ladder). No dead enum.
           var flowRanks = window._gaiaFlowRanks || [];
           publishExplorerMarkers(flowRanks.map(function(r) {
             var rn = r.rankNum != null ? r.rankNum : parseInt(String(r.tier || '').replace(/\D+/g, ''), 10) || 0;
-            var word = (window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function')
-              ? window.GaiaSemantics.rankWord(rn, SUITE_LADDER)
-              : (rn + '★');
+            var word;
+            if (r.branch && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
+              word = window.GaiaSemantics.rankWord(rn, r.branch);
+            } else if (rn <= 3 && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
+              word = window.GaiaSemantics.rankWord(rn, 'standard');
+            } else {
+              word = '';
+            }
             var glyph = rn >= 6 ? '◆' : rn >= 4 ? '◆' : '○';
             return {
               key: 'rank:' + rn,
-              label: word + ' · ' + rn + '★',
+              label: word ? (word + ' · ' + rn + '★') : (rn + '★'),
               glyph: glyph,
               color: 'var(--rank-' + rn + ', var(--text))',
               weight: r.count,
@@ -750,13 +809,22 @@
           RANK_ORDER.forEach(function(rn) {
             var items = rankGroups[rn]; if (!items || !items.length) return;
             items = withinGroupSort(items);
-            html += groupHeader(rn, rn);
+            html += groupHeader(rn, rn, items);
             html += items.map(renderItem).join('');
+            // Marker label mirrors the header: uniform-branch group → branch word;
+            // mixed 4★+ → neutral star-only. Reads emitted branch, not SUITE_LADDER.
+            var mBranch = groupBranch(items);
+            var mWord;
+            if (mBranch && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
+              mWord = window.GaiaSemantics.rankWord(rn, mBranch);
+            } else if (rn <= 3 && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
+              mWord = window.GaiaSemantics.rankWord(rn, 'standard');
+            } else {
+              mWord = '';
+            }
             markers.push({
               key: 'rank:' + rn,
-              label: (window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function')
-                ? window.GaiaSemantics.rankWord(rn, SUITE_LADDER) + ' · ' + rn + '★'
-                : rn + '★',
+              label: mWord ? (mWord + ' · ' + rn + '★') : (rn + '★'),
               glyph: rn >= 4 ? '◆' : '○',
               color: 'var(--rank-' + rn + ', var(--text))',
               kind: 'group',

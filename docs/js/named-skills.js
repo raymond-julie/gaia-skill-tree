@@ -612,19 +612,39 @@
         }
         return first;
       }
+      // Distinct branches present in a group, ordered unique-before-suite (§8) so
+      // a mixed 4★+ header can name them ("Unique/Extra") instead of a bare star.
+      function groupBranches(items) {
+        if (!items || !items.length) return [];
+        var branchOf = (window.GaiaSemantics && typeof window.GaiaSemantics.branchOf === 'function')
+          ? window.GaiaSemantics.branchOf
+          : function(ns) { return (ns && ns.branch) || 'standard'; };
+        var order = ['unique', 'suite', 'standard'];
+        var seen = {};
+        for (var i = 0; i < items.length; i++) { seen[branchOf(items[i])] = true; }
+        var out = [];
+        for (var j = 0; j < order.length; j++) { if (seen[order[j]]) out.push(order[j]); }
+        return out;
+      }
       var GROUP_BRANCH_TOKEN = { standard: '--tier-basic', suite: '--tier-fusion', unique: '--tier-unique' };
       function groupHeader(rankNum, id, items) {
         var rn = parseInt(rankNum, 10) || 0;
         var branch = groupBranch(items);
-        // Uniform-branch group → branch-forked rank word; mixed 4★+ group →
-        // neutral star-only (rankWord would otherwise emit the suite word 'Extra').
+        // Uniform-branch group → branch-forked rank word. Mixed 4★+ group → name
+        // every branch present ("Unique/Extra"), unique-before-suite (§8), so the
+        // segregation is explicit in the header rather than a bare star.
         var word;
         if (branch && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
           word = window.GaiaSemantics.rankWord(rn, branch);
         } else if (rn <= 3 && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
           word = window.GaiaSemantics.rankWord(rn, 'standard'); // shared, branch-agnostic
+        } else if (rn >= 4 && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
+          // mixed 4★+ → join each present branch's rank word, unique-before-suite
+          word = groupBranches(items).map(function (b) {
+            return window.GaiaSemantics.rankWord(rn, b);
+          }).join('/');
         } else {
-          word = ''; // mixed 4★+ → neutral: just the star tier below
+          word = '';
         }
         var glyph = rn >= 4 ? '◆' : '○';
         // Group-level color: uniform-branch group tints by its tier token; a mixed
@@ -812,13 +832,18 @@
             html += groupHeader(rn, rn, items);
             html += items.map(renderItem).join('');
             // Marker label mirrors the header: uniform-branch group → branch word;
-            // mixed 4★+ → neutral star-only. Reads emitted branch, not SUITE_LADDER.
+            // mixed 4★+ → name each branch present ("Unique/Extra", unique-first).
+            // Reads emitted branch, not SUITE_LADDER.
             var mBranch = groupBranch(items);
             var mWord;
             if (mBranch && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
               mWord = window.GaiaSemantics.rankWord(rn, mBranch);
             } else if (rn <= 3 && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
               mWord = window.GaiaSemantics.rankWord(rn, 'standard');
+            } else if (rn >= 4 && window.GaiaSemantics && typeof window.GaiaSemantics.rankWord === 'function') {
+              mWord = groupBranches(items).map(function (b) {
+                return window.GaiaSemantics.rankWord(rn, b);
+              }).join('/');
             } else {
               mWord = '';
             }

@@ -418,6 +418,20 @@ button.plaque__slug:focus-visible {
   margin-bottom: 2px;
 }
 
+/* Contributor pair — wreathed avatar sits directly beside the @handle so the
+   PERSON reads as one unit (tile / settled). The medallion + rank chip stay in
+   the header near the slug (the SKILL). Marco layout intent. */
+.plaque__contributor,
+.plaque-contributor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.plaque__contributor .plaque__handle,
+.plaque__contributor .plaque-contrib-row {
+  margin-top: 0;
+}
+
 /* Install row — mini-terminal. Used by tile / detail / settled / og. */
 .plaque__install-row,
 .ns-install-row {
@@ -1753,9 +1767,27 @@ button.plaque__slug:focus-visible {
   gap: 0.8rem;
   min-width: 0;
 }
+/* Left column grouping (Marco intent): avatar + handle stack tight at the top
+   as the PERSON pair (column flex keeps them adjacent); a slightly wider gap
+   opens before the slug so the SKILL group (slug → medallion → stars) reads as
+   its own cluster below. */
+.plaque--detail .plaque-detail-left .plaque__avatar {
+  margin-bottom: -0.3rem;
+}
+.plaque--detail .plaque-detail-left .plaque__slug {
+  margin-top: 0.35rem;
+}
 .plaque--detail .plaque__slug,
 .plaque--detail .plaque-skill-name {
   font-size: 32px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+/* Right column reads balanced against the left: the title anchors to the top
+   edge (align-items:start on the grid already), and a calmer rhythm keeps the
+   description from floating. */
+.plaque--detail .plaque-detail-right {
+  gap: 0.7rem;
 }
 /* D6 — on the detail hero the rank medallion is the visual anchor: bump it
    above the 52px --lg default and the 56px avatar so avatar → medallion reads
@@ -1767,6 +1799,8 @@ button.plaque__slug:focus-visible {
 .plaque--detail .plaque__description,
 .plaque--detail .plaque-description {
   font-size: 14px;
+  line-height: 1.7;
+  max-width: 68ch;
   -webkit-line-clamp: unset;
   display: block;
 }

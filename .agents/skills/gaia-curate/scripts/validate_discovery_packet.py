@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+def is_trusted_generics(trusted_generics):
+    return isinstance(trusted_generics, list)def is_valid_decision_value(decision_value):
+    return decision_value in DECISIONSSHA256_LENGTH = 64MAX_MAPPING_OPTIONS = 3#!/usr/bin/env pythonMAX_MAPPING_OPTIONS
 """Validate one Gaia discovery packet without importing registry tooling."""
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ LIFECYCLE = ("discovered", "fetched", "parsed", "normalized", "deduped", "mapped
 FINAL_STATES = {"review-ready", "deferred", "rejected"}
 DECISIONS = {"MAP", "NEW_GENERIC", "DUPLICATE", "NOT_A_SKILL", "DEFER"}
 FORBIDDEN_FIELDS = {"evidence", "trustMagnitude", "tmScore", "stars", "grade", "class", "artifact_score"}
-SHA256 = re.compile(r"^[a-f0-9]{64}$")
+SHA256 = re.compile(r"^[a-f0-9]{SHA256_LENGTH}$")
 
 
 def _contains_forbidden(value: Any) -> bool:
@@ -160,7 +162,7 @@ def validate_packet(packet: Any, trusted_generics: Any = None) -> list[str]:
             for option in options
             if isinstance(option, dict)
         } if isinstance(options, list) else set()
-        if not isinstance(trusted_generics, list):
+        if not is_trusted_generics(trusted_generics):
             errors.append("UNTRUSTED_GENERIC_SNAPSHOT")
         elif (
             not isinstance(snapshot, dict)
@@ -180,7 +182,7 @@ def validate_packet(packet: Any, trusted_generics: Any = None) -> list[str]:
 
     decision = packet.get("decision")
     decision_value = decision.get("value") if isinstance(decision, dict) else None
-    if decision_value not in DECISIONS:
+    if not is_valid_decision_value(decision_value):
         errors.append("UNKNOWN_DECISION")
     elif not isinstance(decision.get("reasonCode"), str) or not decision["reasonCode"].strip():
         errors.append("MISSING_REASON_CODE")

@@ -239,7 +239,15 @@
         var miniHtml = (window.plaque && typeof window.plaque.renderMini === 'function')
           ? window.plaque.renderMini(miniNs, dagOpts)
           : '';
-        var colorVar = isGhost ? 'var(--muted)' : 'var(--tier-' + (s.type || 'basic') + ', var(--muted))';
+        // Ygg-II E1: dot color reads the EMITTED branch (ns || s, the same
+        // namedIds[id] || dagNodes[id] lookup used by isUniqueTier above), NEVER the
+        // dead type enum. Branch→token mirrors plaque.css: standard→--tier-basic,
+        // suite→--tier-fusion, unique→--tier-unique.
+        var dagBranch = (window.GaiaSemantics && typeof window.GaiaSemantics.branchOf === 'function')
+          ? window.GaiaSemantics.branchOf(ns || s)
+          : 'standard';
+        var BRANCH_TOKEN = { standard: '--tier-basic', suite: '--tier-fusion', unique: '--tier-unique' };
+        var colorVar = isGhost ? 'var(--muted)' : 'var(' + (BRANCH_TOKEN[dagBranch] || '--tier-basic') + ', var(--muted))';
         if (!isGhost && s.level && String(s.level).indexOf('6') !== -1) {
           colorVar = 'var(--rank-6)';
         }

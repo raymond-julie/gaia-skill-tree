@@ -2745,13 +2745,25 @@ button.plaque__slug:focus-visible {
 }
 .contributor-card-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .contributor-card-handle-wrap {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+/* Contributor directory grouping (Marco layout intent, static-card variant):
+   these cards carry no avatar/medallion, but the same principle applies — the
+   PERSON identity clusters together. The handle + origin badge (handle-wrap)
+   and the contributor's summary rank chip now read side-by-side at the start
+   of the header instead of being flung to opposite edges. The per-skill
+   slug↔rank pairing lives in the .dir-skill-chip preview row below
+   (`/slug 5★`), where each slug already sits with its own star. */
+.contributor-card-header .rank-badge {
+  margin-left: 0;
 }
 .contributor-card-handle {
   font-family: var(--font-body, 'Bricolage Grotesque', sans-serif);
